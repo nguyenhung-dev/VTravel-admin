@@ -1,0 +1,10 @@
+html,
+body {
+  background-color: #fff;
+}
+.main-content {
+  padding: 20px;
+}
+a {
+  text-decoration: none;
+}

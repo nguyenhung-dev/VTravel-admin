@@ -18,4 +18,9 @@ export default defineConfig({
       '@pages': path.resolve(__dirname, './src/pages'),
     },
   },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8000',
+    },
+  }
 })

@@ -7,7 +7,7 @@ export default function MainLayout() {
   const { isSidebarOpen } = useLayout()
 
   return (
-    <main className="w-full min-h-screen relative">
+    <>
       <Header />
       <Dashboard />
       <div
@@ -18,6 +18,6 @@ export default function MainLayout() {
           <Outlet />
         </div>
       </div>
-    </main>
+    </>
   )
 }

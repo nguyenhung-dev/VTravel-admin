@@ -112,9 +112,27 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/50 box-border;
   }
   body {
     @apply bg-background text-foreground;
+    background-color: #fff;
+    font-family: "Roboto", sans-serif;
+    position: relative;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p {
+    margin: 0 !important;
+  }
+  .custom-select-height .ant-select-selector {
+    height: 50px !important;
+    display: flex;
+    align-items: center;
+    padding: 0 11px;
   }
 }

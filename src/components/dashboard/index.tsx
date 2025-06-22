@@ -1,12 +1,16 @@
 import { useLayout } from "@/contexts/LayoutContext";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { FaChartPie, FaGift, FaRegEnvelopeOpen, FaUser } from "react-icons/fa";
-import { MdTour } from "react-icons/md";
-import { FaLocationDot, FaRegEnvelope } from "react-icons/fa6";
+import { MdPayments, MdTour } from "react-icons/md";
+import { FaLocationDot, FaRegComments, FaRegEnvelope } from "react-icons/fa6";
+import { MdSecurity } from "react-icons/md";
+import { IoSettings } from "react-icons/io5";
 import { VscExtensions } from "react-icons/vsc";
 import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
+import { PiFlagBannerFill } from "react-icons/pi";
+import { useEffect } from 'react';
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -18,9 +22,17 @@ const items: MenuItem[] = [
     label: 'Tài khoản',
     icon: <FaUser />,
     children: [
-      { key: '/user/employee', label: 'Tài khoản nhân viên' },
-      { key: '/user/customer', label: 'Tài khoản khách hàng' },
-      { key: '/user/add', label: 'Tạo tài khoản' },
+      { key: '/user/employee', label: 'Quản lý nhân sự' },
+      { key: '/user/customer', label: 'Quản lý khách hàng' },
+      { key: '/user/create', label: 'Tạo tài khoản' },
+    ],
+  },
+  {
+    key: 'decentralization',
+    label: 'Phân quyền',
+    icon: <MdSecurity />,
+    children: [
+      { key: '/decentralization', label: 'Phân quyền tài khoản' }
     ],
   },
 
@@ -61,7 +73,7 @@ const items: MenuItem[] = [
   {
     key: 'combo',
     label: 'Combo',
-    icon: <FaGiftt />,
+    icon: <FaGift />,
     children: [
       { key: '/combos', label: 'Danh sách combo' },
       { key: '/combos/add', label: 'Tạo combo mới' },
@@ -110,7 +122,7 @@ const items: MenuItem[] = [
   {
     key: 'notification',
     label: 'Thông báo',
-    icon: <FaBell />,
+    icon: <PiFlagBannerFill />,
     children: [
       { key: '/notifications', label: 'Danh sách thông báo' },
     ],
@@ -123,6 +135,14 @@ const items: MenuItem[] = [
     children: [
       { key: '/contacts', label: 'Yêu cầu hỗ trợ' },
       { key: '/chats', label: 'Chat trực tuyến' },
+    ],
+  },
+  {
+    key: 'setting',
+    label: 'Cấu hình hệ thống',
+    icon: <IoSettings />,
+    children: [
+      { key: '/system/contact-infomation', label: 'Thông tin liên hệ' }
     ],
   },
 ];
@@ -146,6 +166,13 @@ export default function Dashboard() {
   const { collapsed } = useLayout();
   const navigate = useNavigate();
   const { setTitle } = usePageTitle();
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    const label = findLabelByKey(path, items);
+    if (label) setTitle(label);
+  }, [location.pathname]);
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     const route = e.key;
@@ -158,17 +185,18 @@ export default function Dashboard() {
 
   return (
     <div
-      className={`absolute z-1 top-[70px] left-0 h-[calc(100vh-70px)] min-h-[calc(100vh-70px)]  transition-all duration-300 overflow-hidden ${collapsed ? 'w-[80px]' : 'w-[250px]'}`}
+      className={`fixed z-1 top-[70px] left-0 h-[calc(100vh-70px)] min-h-[calc(100vh-70px)]  transition-all duration-300 overflow-hidden ${collapsed ? 'w-[80px]' : 'w-[250px]'}`}
     >
       <div className='flex flex-col h-full '>
         <Menu
           defaultSelectedKeys={['1']}
           defaultOpenKeys={['sub1']}
           mode="inline"
-          theme="dark"
+          theme="light"
           inlineCollapsed={collapsed}
           items={items}
           onClick={handleMenuClick}
+          selectedKeys={[location.pathname]}
           className="flex-1 overflow-auto"
         />
       </div>

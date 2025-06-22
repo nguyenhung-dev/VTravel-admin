@@ -1,4 +1,3 @@
-// contexts/LayoutContext.tsx
 import { createContext, useContext, useState } from 'react';
 
 interface LayoutContextType {

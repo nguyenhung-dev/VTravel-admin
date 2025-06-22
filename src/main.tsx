@@ -3,9 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from "react-router-dom";
 import { router } from "@/router";
 import { LayoutProvider } from './contexts/LayoutContext';
-import { PageTitleProvider } from "@/contexts/PageTitleContext"
+import { PageTitleProvider } from "@/contexts/PageTitleContext";
 import './index.css';
 import './styles/global.css';
+import 'antd/dist/reset.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

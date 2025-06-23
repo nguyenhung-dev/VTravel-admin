@@ -1,7 +1,15 @@
-import { Button, Form, Input, Select } from 'antd';
+import { Button, Form, Input, Select, Upload } from 'antd';
 import { useState } from 'react';
 import axios from 'axios';
 import { useNotifier } from '@/hooks/useNotifier';
+import { PlusOutlined } from '@ant-design/icons';
+import { API } from "@/lib/axios";
+import {
+  validateFullName,
+  validateEmail,
+  validatePhone,
+  validatePassword,
+} from '@/validators/validationRules';
 
 const { Option } = Select;
 
@@ -14,7 +22,7 @@ export default function CreateUser() {
     try {
       setLoading(true);
 
-      const response = await axios.post('http://localhost:8000/api/register', {
+      const response = await API.post('/register', {
         full_name: values.full_name,
         email: values.email,
         phone: values.phone,
@@ -23,14 +31,20 @@ export default function CreateUser() {
       });
 
       notifySuccess('Đăng ký thành công!');
-      console.log(response.data);
       form.resetFields();
     } catch (error: any) {
-      console.error(error);
-      if (error.response?.data?.message) {
-        notifyError(error.response.data.message);
-      } else {
-        notifyError('Đăng ký thất bại!');
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response?.status === 422) {
+          const errorData = response.data as {
+            message?: string;
+            errors?: Record<string, string[]>;
+          };
+          const firstField = errorData.errors ? Object.keys(errorData.errors)[0] : '';
+          const firstMessage = firstField ? errorData.errors?.[firstField]?.[0] : '';
+
+          notifyError(errorData.message || firstMessage || 'Dữ liệu không hợp lệ');
+        }
       }
     } finally {
       setLoading(false);
@@ -59,7 +73,7 @@ export default function CreateUser() {
             <Form.Item
               label="Họ và tên"
               name="full_name"
-              rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
+              rules={[validateFullName]}
               className="col-span-1 md:col-span-2"
             >
               <Input placeholder="Nguyễn Văn A" className='h-[50px]' />
@@ -68,10 +82,7 @@ export default function CreateUser() {
             <Form.Item
               label="Email"
               name="email"
-              rules={[
-                { required: true, message: 'Vui lòng nhập email' },
-                { type: 'email', message: 'Email không hợp lệ' },
-              ]}
+              rules={[validateEmail]}
             >
               <Input placeholder="abc@example.com" className='h-[50px]' />
             </Form.Item>
@@ -79,7 +90,7 @@ export default function CreateUser() {
             <Form.Item
               label="Số điện thoại"
               name="phone"
-              rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+              rules={[validatePhone]}
             >
               <Input placeholder="0912345678" className='h-[50px]' />
             </Form.Item>
@@ -87,10 +98,7 @@ export default function CreateUser() {
             <Form.Item
               label="Mật khẩu"
               name="password"
-              rules={[
-                { required: true, message: 'Vui lòng nhập mật khẩu' },
-                { min: 6, message: 'Mật khẩu phải từ 6 ký tự' },
-              ]}
+              rules={[validatePassword]}
             >
               <Input.Password placeholder="••••••" className='h-[50px]' />
             </Form.Item>
@@ -105,6 +113,23 @@ export default function CreateUser() {
                 <Option value="staff">Staff</Option>
                 <Option value="admin">Admin</Option>
               </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Ảnh đại diện (tuỳ chọn)"
+              name="avatar"
+              valuePropName="fileList"
+              getValueFromEvent={(e: any) => (Array.isArray(e) ? e : e?.fileList)}
+            >
+              <Upload listType="picture-card" beforeUpload={() => false}>
+                <button
+                  style={{ color: 'inherit', cursor: 'inherit', border: 0, background: 'none' }}
+                  type="button"
+                >
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </button>
+              </Upload>
             </Form.Item>
 
             <Form.Item className="col-span-1 md:col-span-2">

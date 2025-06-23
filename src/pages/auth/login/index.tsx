@@ -1,34 +1,35 @@
-
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import type { FormProps } from 'antd';
 import { Button, Checkbox, Form, Input } from 'antd';
 import { useNotifier } from '@/hooks/useNotifier';
-import { API_URL } from "@/config/api";
 import { API, BACKEND } from "@/lib/axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { validateInfo, validatePassword } from "@/validators/validationRules";
+import axios from 'axios';
 
 type FieldType = {
-  username?: string;
+  info?: string;
   password?: string;
   remember?: boolean;
 };
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const { notifyLoading, notifyError, contextHolder } = useNotifier();
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    const { username, password } = values;
-    const payload = { login: username, password };
+    const { info, password } = values;
+    const payload = { login: info, password };
 
     try {
       await BACKEND.get(`/sanctum/csrf-cookie`);
       const res = await API.post(`/login`, payload);
       const data = res.data;
-      console.log("Login response:", data);
+
       if (data && data.user) {
         if (data.user.role === "admin" || data.user.role === "staff") {
-          sessionStorage.setItem('user', JSON.stringify(data.user));
+          await login();
           notifyLoading("Đang đăng nhập...", () => {
             navigate('/');
           });
@@ -39,10 +40,21 @@ export default function LoginPage() {
         notifyError("Đăng nhập không thành công.");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      notifyError("Đăng nhập không thành công hoặc lỗi máy chủ.");
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response?.status === 422) {
+          notifyError(response.data.message || 'Dữ liệu không hợp lệ');
+        } else if (response?.status === 401 || response?.status === 403) {
+          notifyError(response.data.message);
+        } else {
+          notifyError("Lỗi không xác định");
+        }
+      } else {
+        notifyError("Đã xảy ra lỗi bất ngờ.");
+      }
     }
   };
+
 
   const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
     console.log('Failed:', errorInfo);
@@ -51,7 +63,7 @@ export default function LoginPage() {
   return (
     <>
       {contextHolder}
-      < div className='w-screen h-screen flex justify-center items-center' >
+      <div className='w-screen h-screen flex justify-center items-center'>
         <div className='border-1 py-8 px-8'>
           <Form
             name="basic"
@@ -64,17 +76,17 @@ export default function LoginPage() {
             autoComplete="off"
           >
             <Form.Item<FieldType>
-              label="Username"
-              name="username"
-              rules={[{ required: true, message: 'Please input your username!' }]}
+              label="Email/Số điện thoại"
+              name="info"
+              rules={[validateInfo]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item<FieldType>
-              label="Password"
+              label="Mật khẩu"
               name="password"
-              rules={[{ required: true, message: 'Please input your password!' }]}
+              rules={[validatePassword]}
             >
               <Input.Password />
             </Form.Item>
@@ -90,7 +102,7 @@ export default function LoginPage() {
             </Form.Item>
           </Form>
         </div>
-      </div >
+      </div>
     </>
   );
 }

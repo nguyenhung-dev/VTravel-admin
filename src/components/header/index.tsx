@@ -5,12 +5,12 @@ import type { MenuProps } from 'antd';
 import { Dropdown, Space } from 'antd';
 import { Link } from "react-router-dom";
 import { Button } from "antd";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header() {
   const { toggleSidebar, toggleCollapsed } = useLayout()
   const { title } = usePageTitle()
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const items: MenuProps['items'] = [
     {
@@ -50,7 +50,13 @@ export default function Header() {
           <a onClick={(e) => e.preventDefault()}>
             <Space className="flex items-center gap-2">
               <img src="/images/avatar-default.png" alt="avatar" className="w-10 h-10 rounded-[50%] object-cover" />
-              <span>Admintrator</span>
+              <span>
+                {
+                  user && (
+                    user.full_name
+                  )
+                }
+              </span>
             </Space>
           </a>
         </Dropdown>

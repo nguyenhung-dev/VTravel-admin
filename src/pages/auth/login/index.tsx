@@ -6,6 +6,7 @@ import { API, BACKEND } from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { validateInfo, validatePassword } from "@/validators/validationRules";
 import axios from 'axios';
+import { getCsrfToken } from "@/utils/getCsrfToken";
 
 type FieldType = {
   info?: string;
@@ -23,8 +24,14 @@ export default function LoginPage() {
     const payload = { login: info, password };
 
     try {
-      await BACKEND.get(`/sanctum/csrf-cookie`);
-      const res = await API.post(`/login`, payload);
+
+      const xsrfToken = await getCsrfToken();
+
+      const res = await API.post(`/login`, payload, {
+        headers: {
+          'X-XSRF-TOKEN': xsrfToken ?? '',
+        },
+      });
       const data = res.data;
 
       if (data && data.user) {

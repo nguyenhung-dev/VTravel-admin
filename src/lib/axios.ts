@@ -1,20 +1,17 @@
 import axios from "axios";
-import Cookies from "js-cookie";
 
-export const API = axios.create({
+axios.defaults.withCredentials = true;
+axios.defaults.xsrfCookieName = "XSRF-TOKEN";
+axios.defaults.xsrfHeaderName = "X-XSRF-TOKEN";
+
+const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
-});
-API.interceptors.request.use((config) => {
-  const token = Cookies.get("XSRF-TOKEN");
-  if (token) {
-    config.headers["X-XSRF-TOKEN"] = token;
-  }
-  return config;
+  withCredentials: true, 
 });
 
-export const BACKEND = axios.create({
+const BACKEND = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
-  withCredentials: true,
+  withCredentials: true, 
 });
 
+export {API, BACKEND};

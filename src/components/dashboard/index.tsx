@@ -11,6 +11,7 @@ import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
 import { PiFlagBannerFill } from "react-icons/pi";
 import { useEffect } from 'react';
+import { useAuth } from "@/contexts/AuthContext";
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -28,11 +29,11 @@ const items: MenuItem[] = [
     ],
   },
   {
-    key: 'decentralization',
+    key: 'authorization',
     label: 'Phân quyền',
     icon: <MdSecurity />,
     children: [
-      { key: '/decentralization', label: 'Phân quyền tài khoản' }
+      { key: '/authorization', label: 'Phân quyền tài khoản' }
     ],
   },
 
@@ -162,23 +163,60 @@ const findLabelByKey = (key: string, items: MenuItem[]): string | undefined => {
   return undefined;
 };
 
+const filterMenuItemsByRole = (items: MenuItem[], role: string | undefined): MenuItem[] => {
+  if (role === 'admin') return items;
+
+  if (role === 'staff') {
+    return items
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+
+        if ("key" in item && item.key === "authorization") {
+          return null;
+        }
+
+        if ("key" in item && item.key === "user" && "children" in item && Array.isArray(item.children)) {
+          const filteredChildren = item.children.filter(
+            (child) => child && "key" in child && child.key !== "/user/employee"
+          );
+
+          if (filteredChildren.length === 0) return null;
+
+          return {
+            ...item,
+            children: filteredChildren,
+          };
+        }
+
+        return item;
+      })
+      .filter((item): item is MenuItem => item !== null);
+  }
+
+  return [];
+};
+
+
 export default function Dashboard() {
   const { collapsed } = useLayout();
   const navigate = useNavigate();
   const { setTitle } = usePageTitle();
   const location = useLocation();
+  const { user } = useAuth();
+
+  const filteredItems = filterMenuItemsByRole(items, user?.role);
 
   useEffect(() => {
     const path = location.pathname;
-    const label = findLabelByKey(path, items);
+    const label = findLabelByKey(path, filteredItems);
     if (label) setTitle(label);
-  }, [location.pathname]);
+  }, [location.pathname, filteredItems]);
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     const route = e.key;
     navigate(route);
 
-    const label = findLabelByKey(route, items);
+    const label = findLabelByKey(route, filteredItems);
     if (label) setTitle(label);
   };
 
@@ -194,7 +232,7 @@ export default function Dashboard() {
           mode="inline"
           theme="light"
           inlineCollapsed={collapsed}
-          items={items}
+          items={filteredItems}
           onClick={handleMenuClick}
           selectedKeys={[location.pathname]}
           className="flex-1 overflow-auto"

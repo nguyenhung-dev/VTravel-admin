@@ -4,6 +4,10 @@ import type { TableProps } from 'antd';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { API } from "@/lib/axios";
+import { getCsrfToken } from "@/utils/getCsrfToken";
 
 interface DataType {
   id: number;
@@ -12,17 +16,19 @@ interface DataType {
   email: string;
   phone: string;
   role: string;
+  is_verified: boolean;
+  is_deleted: string;
 }
 
-export default function Customer() {
+export default function Employee() {
   const apiUrl = "http://127.0.0.1:8000/api/users/";
   const [data, setData] = useState<DataType[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { notifySuccess, notifyError, contextHolder } = useNotifier();
-
   const token = localStorage.getItem('token');
 
   const fetchStaffUsers = async () => {
@@ -35,10 +41,16 @@ export default function Customer() {
         },
       });
 
-      const staffUsers = response.data.filter((user: DataType) => user.role === 'customer');
-      setData(staffUsers);
+      let customerUsers = response.data.filter((user: DataType) => user.role === 'customer');
+
+      if (user?.role === 'staff') {
+        customerUsers = customerUsers.filter((user: DataType) => user.is_deleted === 'active');
+      }
+
+      setData(customerUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
+      notifyError('Lấy danh sách người dùng thất bại');
     } finally {
       setLoading(false);
     }
@@ -46,26 +58,30 @@ export default function Customer() {
 
   useEffect(() => {
     fetchStaffUsers();
-  }, []);
+  }, [user?.role]);
 
   const handleDelete = async (id: number) => {
     try {
-      await axios.delete(`${apiUrl}${id}`, {
+      const xsrfToken = await getCsrfToken();
+
+      const response = await API.delete(`/user/delete/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
+          'X-XSRF-TOKEN': xsrfToken ?? '',
         },
       });
 
-      notifySuccess('Xóa user thành công');
+      notifySuccess(response.data.message);
       setData((prevData) => prevData.filter((user) => user.id !== id));
-    } catch (error) {
+      setShowConfirm(false);
+      setDeleteId(null);
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      notifyError('Xóa user thất bại');
+      const errorMessage = error.response?.data?.message || 'Xóa user thất bại';
+      notifyError(errorMessage);
     }
   };
 
-  const columns: TableProps<DataType>['columns'] = [
+  const baseColumns: TableProps<DataType>['columns'] = [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -108,6 +124,39 @@ export default function Customer() {
       render: (role: string) => <Tag color={role === 'staff' ? 'success' : 'default'}>{role}</Tag>,
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'is_verified',
+      key: 'is_verified',
+      render: (isVerified: boolean) => (
+        <span
+          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isVerified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'
+            }`}
+        >
+          {isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
+        </span>
+      ),
+    },
+  ];
+
+  // Add "Hoạt động" column only for admin
+  const activityColumn: TableProps<DataType>['columns'] = [
+    {
+      title: 'Hoạt động',
+      dataIndex: 'is_deleted',
+      key: 'is_deleted',
+      render: (isDeleted: string) => (
+        <span
+          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isDeleted === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+            }`}
+        >
+          {isDeleted === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+        </span>
+      ),
+    },
+  ];
+
+  const actionColumn: TableProps<DataType>['columns'] = [
+    {
       title: 'Action',
       key: 'action',
       render: (_, record) => (
@@ -115,7 +164,13 @@ export default function Customer() {
           menu={{
             items: [
               { label: 'Xem', key: 'view' },
-              { label: 'Sửa', key: 'edit' },
+              {
+                label: 'Sửa',
+                key: 'edit',
+                onClick: () => {
+                  navigate(`/user/update/${record.id}`);
+                },
+              },
               {
                 label: 'Xóa',
                 key: 'delete',
@@ -123,7 +178,7 @@ export default function Customer() {
                 onClick: () => {
                   setDeleteId(record.id);
                   setShowConfirm(true);
-                }
+                },
               },
             ],
           }}
@@ -141,21 +196,24 @@ export default function Customer() {
     },
   ];
 
+  const columns = user?.role === 'admin'
+    ? [...baseColumns, ...activityColumn, ...actionColumn]
+    : [...baseColumns, ...actionColumn];
+
   return (
     <>
       {contextHolder}
-      < Table<DataType>
+      <Table<DataType>
         rowKey="id"
         columns={columns}
         dataSource={data}
         loading={loading}
-        pagination={{ pageSize: 10 }
-        }
+        pagination={{ pageSize: 10 }}
       />
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#00000052] bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-md p-6">
-            <div className='flex flex-col gap-4'>
+            <div className="flex flex-col gap-4">
               <h3 className="text-lg font-semibold">Xác nhận xóa</h3>
               <p className="mb-6">Bạn có chắc chắn muốn xóa tài khoản này?</p>
             </div>
@@ -170,8 +228,6 @@ export default function Customer() {
                 onClick={() => {
                   if (deleteId !== null) {
                     handleDelete(deleteId);
-                    setShowConfirm(false);
-                    setDeleteId(null);
                   }
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -182,7 +238,6 @@ export default function Customer() {
           </div>
         </div>
       )}
-
     </>
   );
 }

@@ -112,6 +112,37 @@ export default function Employee() {
       render: (role: string) => <Tag color={role === 'staff' ? 'success' : 'default'}>{role}</Tag>,
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'is_verified',
+      key: 'is_verified',
+      render: (isVerified: boolean) => (
+        <span
+          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isVerified
+            ? 'bg-green-100 text-green-700'
+            : 'bg-yellow-100 text-yellow-800'
+            }`}
+        >
+          {isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
+        </span>
+      ),
+    },
+    {
+      title: 'Hoạt động',
+      dataIndex: 'is_deleted',
+      key: 'is_deleted',
+      render: (isDeleted: string) => (
+        <span
+          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isDeleted == 'active'
+            ? 'bg-blue-100 text-blue-700'
+            : 'bg-red-100 text-red-700'
+            }`}
+        >
+          {isDeleted == 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+        </span>
+      ),
+    },
+
+    {
       title: 'Action',
       key: 'action',
       render: (_, record) => (

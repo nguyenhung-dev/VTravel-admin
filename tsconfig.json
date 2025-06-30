@@ -10,7 +10,8 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["node"],
-    "jsx": "react-jsx"
+    "types": ["node", "react-dom", "react"],
+    "jsx": "react-jsx",
+    "lib": ["dom", "dom.iterable", "esnext"]
   }
 }

@@ -5,7 +5,9 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+// import { useAuth } from '@/contexts/AuthContext';
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
 import { API } from "@/lib/axios";
 import { getCsrfToken } from "@/utils/getCsrfToken";
 
@@ -26,7 +28,8 @@ export default function Employee() {
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { user } = useAuth();
+  // const { user } = useAuth();
+  const user = useSelector((state: RootState) => state.auth.user);
   const navigate = useNavigate();
   const { notifySuccess, notifyError, contextHolder } = useNotifier();
   const token = localStorage.getItem('token');

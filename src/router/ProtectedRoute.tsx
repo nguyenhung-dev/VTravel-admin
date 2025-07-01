@@ -1,6 +1,6 @@
-// src/components/ProtectedRoute.tsx
-import { useAuth } from "@/contexts/AuthContext";
+import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
+import type { RootState } from "@/store";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,7 +8,8 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRouteRole({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const loading = useSelector((state: RootState) => state.auth.loading);
   const location = useLocation();
 
   if (loading) return null;
@@ -17,5 +18,5 @@ export default function ProtectedRouteRole({ children, allowedRoles }: Protected
     return <Navigate to="/notfound" state={{ from: location }} replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }

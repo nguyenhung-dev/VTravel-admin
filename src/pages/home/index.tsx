@@ -1,5 +1,4 @@
 import styles from "./style.module.css";
-import { usePageTitle } from "@/contexts/PageTitleContext";
 import { useEffect } from "react";
 import { useNotifier } from "@/hooks/useNotifier";
 import { FaUserFriends } from "react-icons/fa";
@@ -263,9 +262,7 @@ const COLORS = ['#007BFF', '#DC3545', '#28A745', '#FFC107', '#6F42C1', '#FD7E14'
 
 export default function HomePage() {
   const { notifySuccess, contextHolder } = useNotifier();
-  const { setTitle } = usePageTitle();
   useEffect(() => {
-    setTitle("Thống kê");
     const isLogin = localStorage.getItem('isLogin');
 
     if (isLogin) {

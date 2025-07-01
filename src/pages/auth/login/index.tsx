@@ -2,11 +2,15 @@ import { useNavigate } from 'react-router-dom';
 import type { FormProps } from 'antd';
 import { Button, Checkbox, Form, Input } from 'antd';
 import { useNotifier } from '@/hooks/useNotifier';
-import { API, BACKEND } from "@/lib/axios";
-import { useAuth } from "@/contexts/AuthContext";
+import { API } from "@/lib/axios";
+// import { useAuth } from "@/contexts/AuthContext"; 
 import { validateInfo, validatePassword } from "@/validators/validationRules";
 import axios from 'axios';
 import { getCsrfToken } from "@/utils/getCsrfToken";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
+import { fetchUser } from "@/store/authSlice";
 
 type FieldType = {
   info?: string;
@@ -16,7 +20,10 @@ type FieldType = {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  // const { login } = useAuth(); 
+  const user = useSelector((state: RootState) => state.auth.user);
+
   const { notifyLoading, notifyError, contextHolder } = useNotifier();
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
@@ -36,7 +43,7 @@ export default function LoginPage() {
 
       if (data && data.user) {
         if (data.user.role === "admin" || data.user.role === "staff") {
-          await login();
+          await dispatch(fetchUser());
           notifyLoading("Đang đăng nhập...", () => {
             navigate('/');
           });

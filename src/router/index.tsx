@@ -1,4 +1,9 @@
 import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store";
+import { fetchUser } from "@/store/authSlice";
+
 import MainLayout from "@layouts/main-layout";
 import NotFound from "@pages/not-found";
 import HomePage from "@pages/home";
@@ -8,9 +13,15 @@ import { DestinationList } from "@pages/destinations";
 import LoginPage from "@/pages/auth/login";
 import Authorization from "@/pages/authorization";
 import ProtectedRoute from "@/contexts/ProtectedRoute";
-import ProtectedRouteRole from "./ProtectedRoute"
+import ProtectedRouteRole from "./ProtectedRoute";
 
 export default function AppRoutes() {
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(fetchUser());
+  }, [dispatch]);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -23,16 +34,22 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="authorization" element={
-          <ProtectedRouteRole allowedRoles={["admin"]}>
-            <Authorization />
-          </ProtectedRouteRole>
-        } />
-        <Route path="user/employee" element={
-          <ProtectedRouteRole allowedRoles={["admin"]}>
-            <Employee />
-          </ProtectedRouteRole>
-        } />
+        <Route
+          path="authorization"
+          element={
+            <ProtectedRouteRole allowedRoles={["admin"]}>
+              <Authorization />
+            </ProtectedRouteRole>
+          }
+        />
+        <Route
+          path="user/employee"
+          element={
+            <ProtectedRouteRole allowedRoles={["admin"]}>
+              <Employee />
+            </ProtectedRouteRole>
+          }
+        />
         <Route index element={<HomePage />} />
         <Route path="user/customer" element={<Customer />} />
         <Route path="user/create" element={<CreateUser />} />

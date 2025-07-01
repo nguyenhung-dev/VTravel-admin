@@ -1,10 +1,16 @@
 import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
 import type { ReactNode } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { loading, isAuthenticated } = useAuth();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const loading = useSelector((state: RootState) => state.auth.loading);
+
+  console.log("User:", user);
+  console.log("Auth:", { loading, isAuthenticated });
 
   if (loading) {
     return (
@@ -23,6 +29,5 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
-
+  return <>{children}</>;
 }

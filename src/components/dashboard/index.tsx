@@ -1,6 +1,6 @@
-import { useLayout } from "@/contexts/LayoutContext";
+// import { useLayout } from "@/contexts/LayoutContext"; 
 import { useLocation, useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/contexts/PageTitleContext";
+// import { usePageTitle } from "@/contexts/PageTitleContext";
 import { FaChartPie, FaGift, FaRegEnvelopeOpen, FaUser } from "react-icons/fa";
 import { MdPayments, MdTour } from "react-icons/md";
 import { FaLocationDot, FaRegComments, FaRegEnvelope } from "react-icons/fa6";
@@ -11,7 +11,10 @@ import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
 import { PiFlagBannerFill } from "react-icons/pi";
 import { useEffect } from 'react';
-import { useAuth } from "@/contexts/AuthContext";
+// import { useAuth } from "@/contexts/AuthContext";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
+import { setTitle } from "@/store/pageSlice";
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -198,18 +201,21 @@ const filterMenuItemsByRole = (items: MenuItem[], role: string | undefined): Men
 
 
 export default function Dashboard() {
-  const { collapsed } = useLayout();
+  // const { collapsed } = useLayout();
   const navigate = useNavigate();
-  const { setTitle } = usePageTitle();
+  // const { setTitle } = usePageTitle();
   const location = useLocation();
-  const { user } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  const collapsed = useSelector((state: RootState) => state.layout.collapsed);
+  const user = useSelector((state: RootState) => state.auth.user);
+  // const { user } = useAuth(); 
 
   const filteredItems = filterMenuItemsByRole(items, user?.role);
 
   useEffect(() => {
     const path = location.pathname;
     const label = findLabelByKey(path, filteredItems);
-    if (label) setTitle(label);
+    if (label) dispatch(setTitle(label));
   }, [location.pathname, filteredItems]);
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
@@ -217,7 +223,7 @@ export default function Dashboard() {
     navigate(route);
 
     const label = findLabelByKey(route, filteredItems);
-    if (label) setTitle(label);
+    if (label) dispatch(setTitle(label));;
   };
 
 
@@ -227,14 +233,13 @@ export default function Dashboard() {
     >
       <div className='flex flex-col h-full '>
         <Menu
-          defaultSelectedKeys={['1']}
-          defaultOpenKeys={['sub1']}
+          selectedKeys={[location.pathname]}
+          defaultOpenKeys={[]}
           mode="inline"
           theme="light"
           inlineCollapsed={collapsed}
           items={filteredItems}
           onClick={handleMenuClick}
-          selectedKeys={[location.pathname]}
           className="flex-1 overflow-auto"
         />
       </div>

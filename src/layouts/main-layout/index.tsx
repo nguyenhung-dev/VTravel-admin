@@ -1,23 +1,25 @@
-import { Outlet } from "react-router-dom"
-import Header from "@/components/header"
-import Dashboard from "@/components/dashboard"
-import { useLayout } from "@/contexts/LayoutContext"
+import { Outlet } from "react-router-dom";
+import Header from "@/components/header";
+import Dashboard from "@/components/dashboard";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
 
 export default function MainLayout() {
-  const { isSidebarOpen } = useLayout()
+  const collapsed = useSelector((state: RootState) => state.layout.collapsed);
 
   return (
     <>
       <Header />
-      <Dashboard />
-      <div
-        className={`transition-all duration-300 pt-[70px] ${isSidebarOpen ? "pl-[250px]" : "pl-[80px]"
-          }`}
-      >
-        <div className="main-content">
-          <Outlet />
+      <div className={`flex pt-[70px]`}>
+        <div className={`transition-all duration-300 ${collapsed ? "w-[80px]" : "w-[250px]"}`}>
+          <Dashboard />
+        </div>
+        <div className="flex-1 transition-all duration-300 overflow-hidden">
+          <div className="main-content px-5">
+            <Outlet />
+          </div>
         </div>
       </div>
     </>
-  )
+  );
 }

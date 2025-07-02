@@ -1,11 +1,12 @@
-import { Dropdown, Space, Table, Tag } from 'antd';
-import { BsThreeDots } from "react-icons/bs";
-import type { TableProps } from 'antd';
-import axios from 'axios';
+import { Tag, Modal, Dropdown, Space } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
-
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
+import TableGeneric from '@/components/TableGeneric';
+import { API } from "@/lib/axios";
+import { getCsrfToken } from "@/utils/getCsrfToken";
 
 interface DataType {
   id: number;
@@ -14,35 +15,35 @@ interface DataType {
   email: string;
   phone: string;
   role: string;
+  is_verified?: boolean;
+  is_deleted?: string; // "active" | "inactive"
 }
 
 export default function Employee() {
-  const apiUrl = "http://127.0.0.1:8000/api/users/";
   const [data, setData] = useState<DataType[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-
+  const [actionType, setActionType] = useState<'soft' | 'hard'>('soft');
   const navigate = useNavigate();
-
   const { notifySuccess, notifyError, contextHolder } = useNotifier();
-
   const token = localStorage.getItem('token');
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const fetchStaffUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(apiUrl, {
+      const response = await API.get(`${API}/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
       });
 
-      const staffUsers = response.data.filter((user: DataType) => user.role === 'staff');
+      const staffUsers = response.data.filter((u: DataType) => u.role === 'staff' || u.role === 'admin');
       setData(staffUsers);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      notifyError('Lấy danh sách nhân viên thất bại');
     } finally {
       setLoading(false);
     }
@@ -52,29 +53,50 @@ export default function Employee() {
     fetchStaffUsers();
   }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleSoftDelete = async () => {
+    if (deleteId == null) return;
     try {
-      await axios.delete(`${apiUrl}${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
+      const xsrfToken = await getCsrfToken();
+      await API.put(`${API}/users/${deleteId}`, { is_deleted: 'inactive' }, {
+        headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
       });
-
-      notifySuccess('Xóa user thành công');
-      setData((prevData) => prevData.filter((user) => user.id !== id));
+      notifySuccess('Chuyển trạng thái tài khoản thành công');
+      setData(prev =>
+        prev.map(u =>
+          u.id === deleteId ? { ...u, is_deleted: 'inactive' } : u
+        )
+      );
+      setShowConfirm(false);
+      setDeleteId(null);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      notifyError('Chuyển trạng thái thất bại');
+    }
+  };
+
+  const handleHardDelete = async () => {
+    if (deleteId == null) return;
+    try {
+      const xsrfToken = await getCsrfToken();
+      await API.delete(`${API}/users/${deleteId}`, {
+        headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
+      });
+      notifySuccess('Xóa user thành công');
+      setData(prev => prev.filter(u => u.id !== deleteId));
+      setShowConfirm(false);
+      setDeleteId(null);
+    } catch (error) {
       notifyError('Xóa user thất bại');
     }
   };
 
-  const columns: TableProps<DataType>['columns'] = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-    },
+  const handleDeleteClick = (id: number, type: 'soft' | 'hard') => {
+    setDeleteId(id);
+    setActionType(type);
+    setShowConfirm(true);
+  };
+
+  const columns = [
+    { title: 'ID', dataIndex: 'id', key: 'id' },
     {
       title: 'Ảnh đại diện',
       dataIndex: 'avatar',
@@ -90,139 +112,92 @@ export default function Employee() {
           />
         ),
     },
-    {
-      title: 'Họ và tên',
-      dataIndex: 'full_name',
-      key: 'full_name',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'Số điện thoại',
-      dataIndex: 'phone',
-      key: 'phone',
-    },
+    { title: 'Họ và tên', dataIndex: 'full_name', key: 'full_name' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
     {
       title: 'Quyền',
       dataIndex: 'role',
       key: 'role',
-      render: (role: string) => <Tag color={role === 'staff' ? 'success' : 'default'}>{role}</Tag>,
+      render: (role: string) => <Tag color={role === 'admin' ? 'magenta' : 'success'}>{role}</Tag>,
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'is_verified',
-      key: 'is_verified',
-      render: (isVerified: boolean) => (
-        <span
-          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isVerified
-            ? 'bg-green-100 text-green-700'
-            : 'bg-yellow-100 text-yellow-800'
-            }`}
-        >
-          {isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
-        </span>
-      ),
-    },
-    {
-      title: 'Hoạt động',
       dataIndex: 'is_deleted',
       key: 'is_deleted',
-      render: (isDeleted: string) => (
-        <span
-          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isDeleted == 'active'
-            ? 'bg-blue-100 text-blue-700'
-            : 'bg-red-100 text-red-700'
-            }`}
-        >
-          {isDeleted == 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+      render: (is_deleted: string) => (
+        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full
+          ${is_deleted === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+          {is_deleted === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
         </span>
       ),
     },
-
     {
       title: 'Action',
       key: 'action',
-      render: (_, record) => (
-        <Dropdown
-          menu={{
-            items: [
-              { label: 'Xem', key: 'view' },
-              {
-                label: 'Sửa',
-                key: 'edit',
-                onClick: () => {
-                  navigate(`/user/update/${record.id}`);
+      render: (_: any, record: DataType) => {
+        return (
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  label: 'Sửa',
+                  key: 'edit',
+                  onClick: () => navigate(`/user/update/${record.id}`),
                 },
-              },
-              {
-                label: 'Xóa',
-                key: 'delete',
-                danger: true,
-                onClick: () => {
-                  setDeleteId(record.id);
-                  setShowConfirm(true);
+                {
+                  label: 'Chuyển trạng thái (xóa mềm)',
+                  key: 'soft-delete',
+                  onClick: () => handleDeleteClick(record.id, 'soft'),
+                  disabled: record.is_deleted === 'inactive',
                 },
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <a onClick={(e) => e.preventDefault()} className="w-full block">
-            <Space>
-              <div className="w-full flex justify-center px-3">
-                <BsThreeDots />
-              </div>
-            </Space>
-          </a>
-        </Dropdown>
-      ),
+                ...(record.role === 'admin'
+                  ? [{
+                    label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
+                    key: 'hard-delete',
+                    danger: true,
+                    onClick: () => handleDeleteClick(record.id, 'hard'),
+                  }]
+                  : [])
+              ],
+            }}
+            trigger={['click']}
+          >
+            <a onClick={e => e.preventDefault()} className="w-full block">
+              <Space>
+                <div className="w-full flex justify-center px-3">
+                  <span>⋮</span>
+                </div>
+              </Space>
+            </a>
+          </Dropdown>
+        );
+      },
     },
   ];
+
   return (
     <>
       {contextHolder}
-      < Table<DataType>
-        rowKey="id"
+      <TableGeneric<DataType>
+        data={data}
         columns={columns}
-        dataSource={data}
         loading={loading}
-        pagination={{ pageSize: 10 }
-        }
+        rowKey="id"
       />
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#00000052] bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-md p-6">
-            <div className='flex flex-col gap-4'>
-              <h3 className="text-lg font-semibold">Xác nhận xóa</h3>
-              <p className="mb-6">Bạn có chắc chắn muốn xóa tài khoản này?</p>
-            </div>
-            <div className="flex justify-end space-x-2 gap-4 mt-10">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="px-4 py-2 bg-gray-300 text-[#fff] rounded hover:bg-gray-400"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => {
-                  if (deleteId !== null) {
-                    handleDelete(deleteId);
-                    setShowConfirm(false);
-                    setDeleteId(null);
-                  }
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <Modal
+        open={showConfirm}
+        onCancel={() => { setShowConfirm(false); setDeleteId(null); }}
+        onOk={actionType === 'soft' ? handleSoftDelete : handleHardDelete}
+        okText={actionType === 'hard' ? "Xóa vĩnh viễn" : "Chuyển trạng thái"}
+        okButtonProps={actionType === 'hard' ? { danger: true } : {}}
+        cancelText="Hủy"
+        title={actionType === 'hard' ? "Xác nhận xóa vĩnh viễn" : "Xác nhận chuyển trạng thái"}
+      >
+        {actionType === 'hard'
+          ? "Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản này? Thao tác này không thể hoàn tác."
+          : "Bạn có chắc chắn muốn chuyển trạng thái tài khoản này sang 'Ngưng hoạt động'? (xóa mềm)"}
+      </Modal>
     </>
   );
 }

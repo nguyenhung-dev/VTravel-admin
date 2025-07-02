@@ -33,7 +33,7 @@ export default function Employee() {
   const fetchStaffUsers = async () => {
     setLoading(true);
     try {
-      const response = await API.get(`${API}/users`, {
+      const response = await API.get(`/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
@@ -57,7 +57,7 @@ export default function Employee() {
     if (deleteId == null) return;
     try {
       const xsrfToken = await getCsrfToken();
-      await API.put(`${API}/users/${deleteId}`, { is_deleted: 'inactive' }, {
+      await API.put(`/users/${deleteId}`, { is_deleted: 'inactive' }, {
         headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
       });
       notifySuccess('Chuyển trạng thái tài khoản thành công');
@@ -77,7 +77,7 @@ export default function Employee() {
     if (deleteId == null) return;
     try {
       const xsrfToken = await getCsrfToken();
-      await API.delete(`${API}/users/${deleteId}`, {
+      await API.delete(`/users/${deleteId}`, {
         headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
       });
       notifySuccess('Xóa user thành công');

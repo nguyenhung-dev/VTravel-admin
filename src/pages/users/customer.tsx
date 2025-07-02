@@ -32,7 +32,7 @@ export default function Customer() {
     setLoading(true);
     try {
       const xsrfToken = await getCsrfToken();
-      const response = await API.get(`${API}/users`, {
+      const response = await API.get(`/users`, {
         headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
       });
       let customerUsers = response.data.filter((user: DataType) => user.role === 'customer');
@@ -41,7 +41,7 @@ export default function Customer() {
       }
       setData(customerUsers);
     } catch (error) {
-      notifyError('Lấy danh sách người dùng thất bại');
+      notifyError('Lấy danh sách khách hàng thất bại');
     } finally {
       setLoading(false);
     }

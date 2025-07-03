@@ -136,3 +136,6 @@
     padding: 0 11px;
   }
 }
+:where(.css-dev-only-do-not-override-36gkoj).ant-btn .ant-btn-icon > svg {
+  display: block;
+}

@@ -1,12 +1,11 @@
-import { Tag, Modal, Dropdown, Space } from 'antd';
+import { Tag, Modal } from 'antd';
+import { getCsrfToken } from '@/utils/getCsrfToken';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store";
 import TableGeneric from '@/components/TableGeneric';
-import { API } from "@/lib/axios";
-import { getCsrfToken } from "@/utils/getCsrfToken";
+import { API } from '@/lib/axios';
+import CustomButton from '@/components/CustomButton';
 
 interface DataType {
   id: number;
@@ -15,31 +14,29 @@ interface DataType {
   email: string;
   phone: string;
   role: string;
+  avatar_url?: string;
   is_verified?: boolean;
-  is_deleted?: string; // "active" | "inactive"
+  is_deleted?: string;
 }
+
+type ActionType = 'disable' | 'enable' | 'force-delete';
 
 export default function Employee() {
   const [data, setData] = useState<DataType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [actionType, setActionType] = useState<ActionType>('disable');
   const [showConfirm, setShowConfirm] = useState(false);
-  const [actionType, setActionType] = useState<'soft' | 'hard'>('soft');
   const navigate = useNavigate();
   const { notifySuccess, notifyError, contextHolder } = useNotifier();
-  const token = localStorage.getItem('token');
-  const user = useSelector((state: RootState) => state.auth.user);
 
   const fetchStaffUsers = async () => {
     setLoading(true);
     try {
-      const response = await API.get(`/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
+      const csrfToken = await getCsrfToken();
+      const response = await API.get("/users", {
+        headers: { 'X-CSRF-Token': csrfToken },
       });
-
       const staffUsers = response.data.filter((u: DataType) => u.role === 'staff' || u.role === 'admin');
       setData(staffUsers);
     } catch (error) {
@@ -53,46 +50,40 @@ export default function Employee() {
     fetchStaffUsers();
   }, []);
 
-  const handleSoftDelete = async () => {
-    if (deleteId == null) return;
-    try {
-      const xsrfToken = await getCsrfToken();
-      await API.put(`/users/${deleteId}`, { is_deleted: 'inactive' }, {
-        headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
-      });
-      notifySuccess('Chuyển trạng thái tài khoản thành công');
-      setData(prev =>
-        prev.map(u =>
-          u.id === deleteId ? { ...u, is_deleted: 'inactive' } : u
-        )
-      );
-      setShowConfirm(false);
-      setDeleteId(null);
-    } catch (error) {
-      notifyError('Chuyển trạng thái thất bại');
-    }
-  };
-
-  const handleHardDelete = async () => {
-    if (deleteId == null) return;
-    try {
-      const xsrfToken = await getCsrfToken();
-      await API.delete(`/users/${deleteId}`, {
-        headers: { 'X-XSRF-TOKEN': xsrfToken ?? '' },
-      });
-      notifySuccess('Xóa user thành công');
-      setData(prev => prev.filter(u => u.id !== deleteId));
-      setShowConfirm(false);
-      setDeleteId(null);
-    } catch (error) {
-      notifyError('Xóa user thất bại');
-    }
-  };
-
-  const handleDeleteClick = (id: number, type: 'soft' | 'hard') => {
-    setDeleteId(id);
+  const handleAction = (id: number, type: ActionType) => {
+    setSelectedId(id);
     setActionType(type);
     setShowConfirm(true);
+  };
+
+  const handleConfirm = async () => {
+    if (selectedId == null) return;
+    try {
+      const csrfToken = await getCsrfToken();
+
+      if (actionType === 'force-delete') {
+        await API.delete(`/user/${selectedId}`, {
+          headers: { 'X-XSRF-TOKEN': csrfToken },
+        });
+        notifySuccess('Đã xóa tài khoản vĩnh viễn');
+      } else {
+        await API.put(`/user/${selectedId}/soft-delete`, null, {
+          headers: { 'X-XSRF-TOKEN': csrfToken },
+        });
+        notifySuccess(
+          actionType === 'disable'
+            ? 'Đã vô hiệu hóa tài khoản'
+            : 'Đã kích hoạt tài khoản'
+        );
+      }
+
+      await fetchStaffUsers();
+    } catch (error) {
+      notifyError('Thao tác thất bại');
+    } finally {
+      setShowConfirm(false);
+      setSelectedId(null);
+    }
   };
 
   const columns = [
@@ -101,15 +92,11 @@ export default function Employee() {
       title: 'Ảnh đại diện',
       dataIndex: 'avatar',
       key: 'avatar',
-      render: (avatar: string | null) =>
-        avatar ? (
-          <img src={avatar} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%' }} />
+      render: (_: any, record: DataType) =>
+        record.avatar_url ? (
+          <img src={record.avatar_url} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: "cover" }} />
         ) : (
-          <img
-            src="/images/avatar-default.png"
-            alt="default avatar"
-            style={{ width: 40, height: 40, borderRadius: '50%' }}
-          />
+          <img src="/images/avatar-default.png" alt="default avatar" style={{ width: 40, height: 40, borderRadius: '50%' }} />
         ),
     },
     { title: 'Họ và tên', dataIndex: 'full_name', key: 'full_name' },
@@ -132,47 +119,30 @@ export default function Employee() {
         </span>
       ),
     },
+  ];
+
+  const getActions = (record: DataType) => [
     {
-      title: 'Action',
-      key: 'action',
-      render: (_: any, record: DataType) => {
-        return (
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  label: 'Sửa',
-                  key: 'edit',
-                  onClick: () => navigate(`/user/update/${record.id}`),
-                },
-                {
-                  label: 'Chuyển trạng thái (xóa mềm)',
-                  key: 'soft-delete',
-                  onClick: () => handleDeleteClick(record.id, 'soft'),
-                  disabled: record.is_deleted === 'inactive',
-                },
-                ...(record.role === 'admin'
-                  ? [{
-                    label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
-                    key: 'hard-delete',
-                    danger: true,
-                    onClick: () => handleDeleteClick(record.id, 'hard'),
-                  }]
-                  : [])
-              ],
-            }}
-            trigger={['click']}
-          >
-            <a onClick={e => e.preventDefault()} className="w-full block">
-              <Space>
-                <div className="w-full flex justify-center px-3">
-                  <span>⋮</span>
-                </div>
-              </Space>
-            </a>
-          </Dropdown>
-        );
-      },
+      key: 'view',
+      label: 'Xem',
+      onClick: () => navigate(`/user/${record.id}`),
+    },
+    {
+      key: 'edit',
+      label: 'Sửa',
+      onClick: () => navigate(`/user/update/${record.id}`),
+    },
+    {
+      key: 'toggle',
+      label: record.is_deleted === 'active' ? 'Disable' : 'Enable',
+      onClick: () =>
+        handleAction(record.id, record.is_deleted === 'active' ? 'disable' : 'enable'),
+    },
+    {
+      key: 'delete',
+      label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
+      onClick: () => handleAction(record.id, 'force-delete'),
+      danger: true,
     },
   ];
 
@@ -184,19 +154,59 @@ export default function Employee() {
         columns={columns}
         loading={loading}
         rowKey="id"
+        getActions={getActions}
       />
       <Modal
         open={showConfirm}
-        onCancel={() => { setShowConfirm(false); setDeleteId(null); }}
-        onOk={actionType === 'soft' ? handleSoftDelete : handleHardDelete}
-        okText={actionType === 'hard' ? "Xóa vĩnh viễn" : "Chuyển trạng thái"}
-        okButtonProps={actionType === 'hard' ? { danger: true } : {}}
-        cancelText="Hủy"
-        title={actionType === 'hard' ? "Xác nhận xóa vĩnh viễn" : "Xác nhận chuyển trạng thái"}
+        title={
+          actionType === 'disable'
+            ? 'Xác nhận vô hiệu hóa tài khoản'
+            : actionType === 'enable'
+              ? 'Xác nhận kích hoạt tài khoản'
+              : 'Xác nhận xóa vĩnh viễn tài khoản'
+        }
+        onCancel={() => {
+          setShowConfirm(false);
+          setSelectedId(null);
+        }}
+        footer={[
+          <CustomButton
+            key="cancel"
+            text="Hủy"
+            customType="cancel"
+            onClick={() => {
+              setShowConfirm(false);
+              setSelectedId(null);
+            }}
+          />,
+          <CustomButton
+            key="confirm"
+            text={
+              actionType === 'disable'
+                ? 'Vô hiệu hóa'
+                : actionType === 'enable'
+                  ? 'Kích hoạt'
+                  : 'Xóa vĩnh viễn'
+            }
+            customType={
+              actionType === 'disable'
+                ? 'disable'
+                : actionType === 'enable'
+                  ? 'enable'
+                  : 'forceDelete'
+            }
+            loading={loading}
+            onClick={handleConfirm}
+          />,
+        ]}
       >
-        {actionType === 'hard'
-          ? "Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản này? Thao tác này không thể hoàn tác."
-          : "Bạn có chắc chắn muốn chuyển trạng thái tài khoản này sang 'Ngưng hoạt động'? (xóa mềm)"}
+        {
+          actionType === 'disable'
+            ? 'Bạn có chắc chắn muốn vô hiệu hóa tài khoản này không?'
+            : actionType === 'enable'
+              ? 'Bạn có chắc chắn muốn kích hoạt lại tài khoản này không?'
+              : 'Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản này? Hành động này không thể hoàn tác.'
+        }
       </Modal>
     </>
   );

@@ -19,12 +19,11 @@ export default function Header() {
 
   const handleToggleSidebar = () => {
     dispatch(toggleCollapse());
-    // Nếu có toggleSidebar khác thì thêm vào layoutSlice nhé
   };
 
   const items: MenuProps["items"] = [
     {
-      label: <Link to="/">Profile</Link>,
+      label: <Link to="/profile">Profile</Link>,
       key: "0",
     },
     {
@@ -57,11 +56,18 @@ export default function Header() {
           <a onClick={(e) => e.preventDefault()}>
             <Space className="flex items-center gap-2">
               <img
-                src="/images/avatar-default.png"
+                src={
+                  user?.avatar
+                    ? `${import.meta.env.VITE_BACKEND_URL}/storage/${user.avatar}`
+                    : "/images/avatar-default.png"
+                }
                 alt="avatar"
                 className="w-10 h-10 rounded-[50%] object-cover"
               />
-              <span>{user?.full_name}</span>
+              <div>
+                <h3 className="font-bold text-[18px] text-black">{user?.full_name}</h3>
+                <span className="text-[14px] text-[#878787] font-[500]">{user?.role === "admin" ? "Quản trị viên" : "Nhân viên"}</span>
+              </div>
             </Space>
           </a>
         </Dropdown>

@@ -3,13 +3,11 @@ import type { FormProps } from 'antd';
 import { Button, Checkbox, Form, Input } from 'antd';
 import { useNotifier } from '@/hooks/useNotifier';
 import { API } from "@/lib/axios";
-// import { useAuth } from "@/contexts/AuthContext"; 
 import { validateInfo, validatePassword } from "@/validators/validationRules";
 import axios from 'axios';
 import { getCsrfToken } from "@/utils/getCsrfToken";
-import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import type { RootState, AppDispatch } from "@/store";
+import type { AppDispatch } from "@/store";
 import { fetchUser } from "@/store/authSlice";
 
 type FieldType = {
@@ -21,8 +19,6 @@ type FieldType = {
 export default function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  // const { login } = useAuth(); 
-  const user = useSelector((state: RootState) => state.auth.user);
 
   const { notifyLoading, notifyError, contextHolder } = useNotifier();
 

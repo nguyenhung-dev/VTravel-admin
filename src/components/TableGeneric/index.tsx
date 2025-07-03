@@ -1,63 +1,55 @@
+
 import { Table, Dropdown, Space } from 'antd';
 import { BsThreeDots } from "react-icons/bs";
+import type { ColumnsType } from 'antd/es/table';
 
-interface TableGenericProps<T> {
+export type TableAction = {
+  key: string;
+  label: React.ReactNode;
+  onClick?: () => void;
+  danger?: boolean;
+  disabled?: boolean;
+};
+
+export interface TableGenericProps<T> {
   data: T[];
-  columns: any[];
+  columns: ColumnsType<T>;
   loading?: boolean;
-  showConfirm?: boolean;
-  onDeleteClick?: (id: number) => void;
-  onEditClick?: (id: number) => void;
-  deleteId?: number | null;
-  setShowConfirm?: (show: boolean) => void;
-  contextHolder?: React.ReactNode;
   rowKey?: string;
-  actionColumn?: boolean;
+  contextHolder?: React.ReactNode;
+  getActions?: (record: T) => TableAction[];
 }
 
 export default function TableGeneric<T extends { id: number }>({
   data,
   columns,
   loading = false,
-  showConfirm = false,
-  onDeleteClick,
-  onEditClick,
-  deleteId,
-  setShowConfirm,
-  contextHolder,
   rowKey = 'id',
-  actionColumn = true,
+  contextHolder,
+  getActions,
 }: TableGenericProps<T>) {
-  const mergedColumns = actionColumn
-    ? [
-      ...columns,
-      {
+  const mergedColumns: ColumnsType<T> = [
+    ...columns,
+    ...(getActions
+      ? [{
         title: 'Action',
         key: 'action',
         render: (_: any, record: T) => (
           <Dropdown
             menu={{
-              items: [
-                { label: 'Xem', key: 'view' },
-                ...(onEditClick
-                  ? [{
-                    label: 'Sửa',
-                    key: 'edit',
-                    onClick: () => onEditClick(record.id),
-                  }]
-                  : []),
-                ...(onDeleteClick
-                  ? [{
-                    label: 'Xóa',
-                    key: 'delete',
-                    danger: true,
-                    onClick: () => {
-                      setShowConfirm && setShowConfirm(true);
-                      onDeleteClick(record.id);
-                    },
-                  }]
-                  : []),
-              ],
+              items: getActions(record).map(action => ({
+                key: action.key,
+                label: (
+                  <span
+                    onClick={action.disabled ? undefined : action.onClick}
+                    style={{ color: action.disabled ? '#bfbfbf' : undefined }}
+                  >
+                    {action.label}
+                  </span>
+                ),
+                disabled: action.disabled,
+                danger: action.danger,
+              })),
             }}
             trigger={['click']}
           >
@@ -70,9 +62,9 @@ export default function TableGeneric<T extends { id: number }>({
             </a>
           </Dropdown>
         ),
-      }
-    ]
-    : columns;
+      }]
+      : [])
+  ];
 
   return (
     <>
@@ -83,6 +75,7 @@ export default function TableGeneric<T extends { id: number }>({
         dataSource={data}
         loading={loading}
         pagination={{ pageSize: 10 }}
+        className='shadow-lg'
       />
     </>
   );

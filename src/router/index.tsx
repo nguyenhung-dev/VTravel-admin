@@ -7,8 +7,9 @@ import { fetchUser } from "@/store/authSlice";
 import MainLayout from "@layouts/main-layout";
 import NotFound from "@pages/not-found";
 import HomePage from "@pages/home";
+import Profile from "@pages/profile";
 import { Employee, Customer, CreateUser, UpdateUser } from "@pages/users";
-import { TourList } from "@pages/tours";
+import { Tours, TourCategory } from "@pages/tours";
 import { DestinationList } from "@pages/destinations";
 import LoginPage from "@/pages/auth/login";
 import Authorization from "@/pages/authorization";
@@ -51,10 +52,15 @@ export default function AppRoutes() {
           }
         />
         <Route index element={<HomePage />} />
+        {/* === USERS === */}
         <Route path="user/customer" element={<Customer />} />
         <Route path="user/create" element={<CreateUser />} />
         <Route path="user/update/:id" element={<UpdateUser />} />
-        <Route path="tours" element={<TourList />} />
+        <Route path="profile" element={<Profile />} />
+        {/* === TOURS === */}
+        <Route path="tours" element={<Tours />} />
+        <Route path="tours/category" element={<TourCategory />} />
+        {/* === DESTINATIONS === */}
         <Route path="destination-list" element={<DestinationList />} />
       </Route>
 

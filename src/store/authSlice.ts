@@ -8,6 +8,7 @@ export interface User {
   email: string;
   avatar?: string;
   role: string;
+  avatar_url?: string;
   is_verified: boolean;
   is_deleted: string;
 }

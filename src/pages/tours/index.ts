@@ -1,3 +1,4 @@
-import TourList from "./TourList";
+import Tours from "./tours";
+import TourCategory from "./category";
 
-export { TourList }
+export { Tours, TourCategory }

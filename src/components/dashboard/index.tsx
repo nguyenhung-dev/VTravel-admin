@@ -45,8 +45,8 @@ const items: MenuItem[] = [
     label: 'Quản lý Tours',
     icon: <MdTour />,
     children: [
-      { key: '/tours', label: 'Danh sách Tours' },
-      { key: '/category/tours', label: 'Danh mục Tours' },
+      { key: '/tours/category', label: 'Danh mục Tours' },
+      { key: '/tours', label: 'Tất cả Tours' },
       { key: '/tours/book', label: 'Đặt Tour' },
     ],
   },

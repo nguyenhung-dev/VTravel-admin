@@ -1,9 +1,8 @@
-import styles from "./style.module.css";
 import { Button } from 'antd';
 import { useNotifier } from "@/hooks/useNotifier";
 import { notification } from 'antd';
 
-export default function TourList() {
+export default function Tours() {
   const { notifySuccess, contextHolder } = useNotifier();
 
   return (

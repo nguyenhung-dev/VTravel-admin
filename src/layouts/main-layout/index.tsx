@@ -15,7 +15,7 @@ export default function MainLayout() {
           <Dashboard />
         </div>
         <div className="flex-1 transition-all duration-300 overflow-hidden">
-          <div className="main-content px-5">
+          <div className="main-content">
             <Outlet />
           </div>
         </div>

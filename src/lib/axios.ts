@@ -1,17 +1,23 @@
 import axios from "axios";
 
-axios.defaults.withCredentials = true;
-axios.defaults.xsrfCookieName = "XSRF-TOKEN";
-axios.defaults.xsrfHeaderName = "X-XSRF-TOKEN";
-
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true, 
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+});
+
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("access_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 const BACKEND = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
-  withCredentials: true, 
 });
 
-export {API, BACKEND};
+export { API, BACKEND };

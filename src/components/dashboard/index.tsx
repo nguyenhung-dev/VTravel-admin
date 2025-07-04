@@ -1,6 +1,4 @@
-// import { useLayout } from "@/contexts/LayoutContext"; 
 import { useLocation, useNavigate } from "react-router-dom";
-// import { usePageTitle } from "@/contexts/PageTitleContext";
 import { FaChartPie, FaGift, FaRegEnvelopeOpen, FaUser } from "react-icons/fa";
 import { MdPayments, MdTour } from "react-icons/md";
 import { FaLocationDot, FaRegComments, FaRegEnvelope } from "react-icons/fa6";
@@ -11,7 +9,6 @@ import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
 import { PiFlagBannerFill } from "react-icons/pi";
 import { useEffect } from 'react';
-// import { useAuth } from "@/contexts/AuthContext";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "@/store";
 import { setTitle } from "@/store/pageSlice";

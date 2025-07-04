@@ -1,6 +1,6 @@
-// src/store/authSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { API } from "@/lib/axios";
+import axios from "axios";
 
 export interface User {
   id: number;
@@ -30,16 +30,30 @@ export const fetchUser = createAsyncThunk(
   "auth/fetchUser",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await API.get("/me");
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await axios.get("https://9e9a-171-225-184-216.ngrok-free.app/api/me", {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}` || "",
+        },
+      });
+      // console.log("Response from /me:", res.data);
       if (res.status === 200 && res.data.user) {
-        return res.data.user as User;
+        return res.data.user;
       }
       return rejectWithValue("User not found");
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Fetch user error:", err?.response ?? err);
       return rejectWithValue("Failed to fetch user");
     }
   }
 );
+
 
 // ===== ASYNC ACTION: logout =====
 export const logout = createAsyncThunk("auth/logout", async () => {
@@ -47,6 +61,8 @@ export const logout = createAsyncThunk("auth/logout", async () => {
     await API.post("/logout");
   } catch (err) {
     console.error("Logout failed:", err);
+  } finally {
+    localStorage.removeItem("access_token");
   }
 });
 
@@ -54,7 +70,6 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    // Dùng nếu login trả về user trực tiếp (bạn có thể thêm nếu cần)
     setUser(state, action) {
       state.user = action.payload;
       state.isAuthenticated = true;
@@ -63,7 +78,6 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchUser
       .addCase(fetchUser.pending, (state) => {
         state.loading = true;
       })
@@ -77,7 +91,6 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.loading = false;
       })
-      // logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.isAuthenticated = false;

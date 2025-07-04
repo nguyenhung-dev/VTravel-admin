@@ -5,10 +5,10 @@ import { useNotifier } from '@/hooks/useNotifier';
 import { API } from "@/lib/axios";
 import { validateInfo, validatePassword } from "@/validators/validationRules";
 import axios from 'axios';
-import { getCsrfToken } from "@/utils/getCsrfToken";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
 import { fetchUser } from "@/store/authSlice";
+import styles from './style.module.css';
 
 type FieldType = {
   info?: string;
@@ -27,22 +27,24 @@ export default function LoginPage() {
     const payload = { login: info, password };
 
     try {
-
-      const xsrfToken = await getCsrfToken();
-
-      const res = await API.post(`/login`, payload, {
-        headers: {
-          'X-XSRF-TOKEN': xsrfToken ?? '',
-        },
-      });
+      const res = await API.post(`/login`, payload);
       const data = res.data;
 
-      if (data && data.user) {
+      console.log(data)
+
+      if (data && data.user && data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
+        API.defaults.headers.common["Authorization"] = `Bearer ${data.access_token}`;
+
         if (data.user.role === "admin" || data.user.role === "staff") {
-          await dispatch(fetchUser());
-          notifyLoading("Đang đăng nhập...", () => {
-            navigate('/');
-          });
+          const result = await dispatch(fetchUser());
+
+          if (fetchUser.fulfilled.match(result)) {
+            notifyLoading("Đang đăng nhập...");
+            navigate("/");
+          } else {
+            notifyError("Không lấy được thông tin người dùng.");
+          }
         } else {
           notifyError("Không có quyền truy cập.");
         }
@@ -73,8 +75,8 @@ export default function LoginPage() {
   return (
     <>
       {contextHolder}
-      <div className='w-screen h-screen flex justify-center items-center'>
-        <div className='border-1 py-8 px-8'>
+      <div className={`${styles.loginForm}`}>
+        <div className={`${styles.form}`}>
           <Form
             name="basic"
             labelCol={{ span: 8 }}

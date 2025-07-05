@@ -1,10 +1,13 @@
-import { Tag, Modal } from 'antd';
+import { Tag, Modal, Button } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
 import TableGeneric from '@/components/TableGeneric';
 import { API } from '@/lib/axios';
 import CustomButton from '@/components/CustomButton';
+import {
+  PlusOutlined
+} from '@ant-design/icons';
 
 interface DataType {
   id: number;
@@ -99,12 +102,23 @@ export default function Employee() {
       render: (role: string) => <Tag color={role === 'admin' ? 'magenta' : 'success'}>{role}</Tag>,
     },
     {
+      title: 'Xác thực',
+      dataIndex: 'is_verified',
+      key: 'is_verified',
+      render: (is_verified: boolean) => (
+        <span className={`
+          ${is_verified === true ? 'active' : 'inactive'}`}>
+          {is_verified === true ? 'Đã xác thực' : 'Chưa xác thực'}
+        </span>
+      ),
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'is_deleted',
       key: 'is_deleted',
       render: (is_deleted: string) => (
-        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full
-          ${is_deleted === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+        <span className={`
+          ${is_deleted === 'active' ? 'active' : 'inactive'}`}>
           {is_deleted === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
         </span>
       ),
@@ -113,14 +127,15 @@ export default function Employee() {
 
   const getActions = (record: DataType) => [
     {
-      key: 'view',
-      label: 'Xem',
-      onClick: () => navigate(`/user/${record.id}`),
-    },
-    {
       key: 'edit',
       label: 'Sửa',
-      onClick: () => navigate(`/user/update/${record.id}`),
+      onClick: () => {
+        if (record.is_deleted === 'inactive') {
+          notifyError('Tài khoản này đang bị vô hiệu hóa, không thể chỉnh sửa.');
+        } else {
+          navigate(`/user/update/${record.id}`);
+        }
+      },
     },
     {
       key: 'toggle',
@@ -139,6 +154,17 @@ export default function Employee() {
   return (
     <>
       {contextHolder}
+      <div className='mb-2'>
+        <Button
+          type="primary"
+          icon={< PlusOutlined />}
+          onClick={() => {
+            navigate('/user/create', { state: { role: 'employee' } })
+          }}
+        >
+          Thêm tài khoản
+        </ Button>
+      </div>
       <TableGeneric<DataType>
         data={data}
         columns={columns}

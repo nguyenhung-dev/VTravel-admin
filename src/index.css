@@ -139,3 +139,9 @@
 :where(.css-dev-only-do-not-override-36gkoj).ant-btn .ant-btn-icon > svg {
   display: block;
 }
+.active {
+  @apply text-emerald-500 bg-blue-100 inline-block px-3 py-1 text-xs font-medium rounded-full;
+}
+.inactive {
+  @apply bg-red-100 text-red-600 inline-block px-3 py-1 text-xs font-medium rounded-full;
+}

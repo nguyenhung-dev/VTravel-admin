@@ -1,4 +1,4 @@
-import { Tag, Modal } from 'antd';
+import { Tag, Modal, Button } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,9 @@ import TableGeneric from '@/components/TableGeneric';
 import type { TableAction } from '@/components/TableGeneric';
 import { API } from '@/lib/axios';
 import CustomButton from '@/components/CustomButton';
+import {
+  PlusOutlined
+} from '@ant-design/icons';
 
 interface DataType {
   id: number;
@@ -106,23 +109,41 @@ export default function Customer() {
       render: (role: string) => <Tag color={role === 'staff' ? 'success' : 'default'}>{role}</Tag>,
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'is_deleted',
-      key: 'is_deleted',
-      render: (isDeleted: string) => (
-        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${isDeleted === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-          {isDeleted === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+      title: 'Xác thực',
+      dataIndex: 'is_verified',
+      key: 'is_verified',
+      render: (is_verified: boolean) => (
+        <span className={`${is_verified === true ? 'active' : 'inactive'}`}>
+          {is_verified === true ? 'Đã xác thực' : 'Chưa xác thực'}
         </span>
       ),
     },
   ];
+  if (user?.role === 'admin') {
+    baseColumns.push({
+      title: 'Trạng thái',
+      dataIndex: 'is_deleted',
+      key: 'is_deleted',
+      render: (isDeleted: string) => (
+        <span className={`${isDeleted === 'active' ? 'active' : 'inactive'}`}>
+          {isDeleted === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+        </span>
+      ),
+    });
+  }
 
   const getActions: (record: DataType) => TableAction[] = (record) => {
     const actions: TableAction[] = [
       {
         key: 'edit',
         label: 'Sửa',
-        onClick: () => navigate(`/user/update/${record.id}`),
+        onClick: () => {
+          if (record.is_deleted === 'inactive') {
+            notifyError('Tài khoản này đang bị vô hiệu hóa, không thể chỉnh sửa.');
+          } else {
+            navigate(`/user/update/${record.id}`);
+          }
+        },
       },
     ];
 
@@ -162,6 +183,17 @@ export default function Customer() {
   return (
     <>
       {contextHolder}
+      <div className='mb-2'>
+        <Button
+          type="primary"
+          icon={< PlusOutlined />}
+          onClick={() => {
+            navigate('/user/create', { state: { role: 'customer' } })
+          }}
+        >
+          Thêm tài khoản
+        </ Button>
+      </div>
       <TableGeneric<DataType>
         data={data}
         columns={baseColumns}

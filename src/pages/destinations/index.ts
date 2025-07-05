@@ -1,3 +1,4 @@
-import DestinationList from "./DestinationList";
+import Destinations from "./destinations";
+import TourDestination from "./category"
 
-export { DestinationList }
+export { Destinations, TourDestination }

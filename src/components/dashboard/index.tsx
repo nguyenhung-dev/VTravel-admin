@@ -25,7 +25,6 @@ const items: MenuItem[] = [
     children: [
       { key: '/user/employee', label: 'Quản lý nhân sự' },
       { key: '/user/customer', label: 'Quản lý khách hàng' },
-      { key: '/user/create', label: 'Tạo tài khoản' },
     ],
   },
   {
@@ -54,7 +53,7 @@ const items: MenuItem[] = [
     icon: <FaLocationDot />,
     children: [
       { key: '/destinations', label: 'Danh sách điểm đến' },
-      { key: '/category/destinations', label: 'Danh mục điểm đến' },
+      { key: '/destination/category', label: 'Danh mục điểm đến' },
       { key: '/destinations/add', label: 'Thêm điểm đến' },
     ],
   },

@@ -34,15 +34,7 @@ export const fetchUser = createAsyncThunk(
       if (token) {
         API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       }
-
-      const res = await axios.get("https://9e9a-171-225-184-216.ngrok-free.app/api/me", {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}` || "",
-        },
-      });
-      // console.log("Response from /me:", res.data);
+      const res = await API.get("/me");
       if (res.status === 200 && res.data.user) {
         return res.data.user;
       }
@@ -53,8 +45,6 @@ export const fetchUser = createAsyncThunk(
     }
   }
 );
-
-
 // ===== ASYNC ACTION: logout =====
 export const logout = createAsyncThunk("auth/logout", async () => {
   try {

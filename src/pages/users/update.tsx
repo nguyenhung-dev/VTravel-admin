@@ -11,7 +11,6 @@ import {
 import { useNotifier } from '@/hooks/useNotifier';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
-import { getCsrfToken } from '@/utils/getCsrfToken';
 import { API } from "@/lib/axios";
 import { useDispatch } from 'react-redux';
 import { setUser } from '@/store/authSlice';
@@ -33,10 +32,7 @@ export default function UpdateUser() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const csrfToken = await getCsrfToken();
-        const res = await API.get(`/user/${id}`, {
-          headers: { 'X-CSRF-Token': csrfToken },
-        });
+        const res = await API.get(`/user/${id}`);
         const user = res.data;
         form.setFieldsValue(user);
         if (user.avatar_url) {
@@ -73,15 +69,11 @@ export default function UpdateUser() {
 
     try {
       setLoading(true);
-
-      const csrfToken = await getCsrfToken();
-
       await API.post(`/user/${id}?_method=PUT`,
         formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'X-XSRF-TOKEN': csrfToken,
           },
         }
       );

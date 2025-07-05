@@ -12,7 +12,6 @@ import {
 import type { UploadFile } from 'antd/es/upload/interface';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
-import { getCsrfToken } from '@/utils/getCsrfToken';
 import { API } from "@/lib/axios";
 
 const { Option } = Select;
@@ -44,12 +43,9 @@ export default function CreateUser() {
         formData.append('avatar', fileList[0].originFileObj as File);
       }
 
-      const csrfToken = await getCsrfToken();
-
       const response = await API.post('/register', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'X-XSRF-TOKEN': csrfToken,
         },
       });
 

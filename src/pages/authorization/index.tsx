@@ -1,5 +1,4 @@
 import { Tag, Modal, Select, message } from 'antd';
-import { getCsrfToken } from '@/utils/getCsrfToken';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
@@ -36,10 +35,7 @@ export default function Authorization() {
   const fetchAllUsers = async () => {
     setLoading(true);
     try {
-      const csrfToken = await getCsrfToken();
-      const response = await API.get("/users", {
-        headers: { 'X-CSRF-Token': csrfToken },
-      });
+      const response = await API.get("/users");
       setData(response.data);
     } catch (error) {
       notifyError('Lấy danh sách người dùng thất bại');
@@ -61,17 +57,11 @@ export default function Authorization() {
   const handleConfirm = async () => {
     if (selectedId == null) return;
     try {
-      const csrfToken = await getCsrfToken();
-
       if (actionType === 'force-delete') {
-        await API.delete(`/user/${selectedId}`, {
-          headers: { 'X-XSRF-TOKEN': csrfToken },
-        });
+        await API.delete(`/user/${selectedId}`);
         notifySuccess('Đã xóa tài khoản vĩnh viễn');
       } else {
-        await API.put(`/user/${selectedId}/soft-delete`, null, {
-          headers: { 'X-XSRF-TOKEN': csrfToken },
-        });
+        await API.put(`/user/${selectedId}/soft-delete`, null);
         notifySuccess(
           actionType === 'disable'
             ? 'Đã vô hiệu hóa tài khoản'
@@ -97,10 +87,7 @@ export default function Authorization() {
   const handleConfirmRoleChange = async () => {
     if (!selectedId || !newRole) return;
     try {
-      const csrfToken = await getCsrfToken();
-      await API.put(`/user/${selectedId}`, { role: newRole }, {
-        headers: { 'X-XSRF-TOKEN': csrfToken },
-      });
+      await API.put(`/user/${selectedId}`, { role: newRole });
       message.success('Cập nhật quyền thành công');
       await fetchAllUsers();
     } catch (err) {

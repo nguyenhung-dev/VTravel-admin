@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { API } from "@/lib/axios";
-import { getCsrfToken } from "@/utils/getCsrfToken";
 import { Button, Form, Input, Select, Upload } from 'antd';
 
 interface ProfileData {
@@ -17,13 +16,8 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const csrfToken = await getCsrfToken();
       try {
-        const res = await API.get("/profile", {
-          headers: {
-            'X-XSRF-TOKEN': csrfToken ?? '',
-          }
-        });
+        const res = await API.get("/profile");
         setProfile(res.data);
       } catch (err) {
         console.error("Lỗi lấy thông tin profile", err);

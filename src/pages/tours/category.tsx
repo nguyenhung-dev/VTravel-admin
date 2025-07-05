@@ -17,7 +17,6 @@ import {
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { API } from '@/lib/axios';
-import { getCsrfToken } from '@/utils/getCsrfToken';
 import TableGeneric from '@/components/TableGeneric';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableAction } from '@/components/TableGeneric';
@@ -74,15 +73,11 @@ export default function TourCategory() {
       if (fileList[0]?.originFileObj) {
         formData.append('thumbnail', fileList[0].originFileObj);
       }
-
-      const csrfToken = await getCsrfToken();
-
       if (editingCategory) {
         // UPDATE
         await API.post(`/categories/${editingCategory.id}?_method=PUT`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'X-XSRF-TOKEN': csrfToken,
           },
         });
         notifySuccess('Cập nhật danh mục thành công');
@@ -91,7 +86,6 @@ export default function TourCategory() {
         await API.post('/categories', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'X-XSRF-TOKEN': csrfToken,
           },
         });
         notifySuccess('Tạo danh mục thành công');
@@ -120,10 +114,7 @@ export default function TourCategory() {
 
   const handleDelete = async (id: number) => {
     try {
-      const csrfToken = await getCsrfToken();
-      await API.delete(`/categories/${id}`, {
-        headers: { 'X-XSRF-TOKEN': csrfToken },
-      });
+      await API.delete(`/categories/${id}`);
       notifySuccess('Xóa danh mục thành công');
       fetchCategories();
     } catch {

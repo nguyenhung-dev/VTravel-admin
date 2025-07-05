@@ -1,5 +1,4 @@
 import { Tag, Modal } from 'antd';
-import { getCsrfToken } from '@/utils/getCsrfToken';
 import { useEffect, useState } from 'react';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
@@ -33,10 +32,7 @@ export default function Employee() {
   const fetchStaffUsers = async () => {
     setLoading(true);
     try {
-      const csrfToken = await getCsrfToken();
-      const response = await API.get("/users", {
-        headers: { 'X-CSRF-Token': csrfToken },
-      });
+      const response = await API.get("/users");
       const staffUsers = response.data.filter((u: DataType) => u.role === 'staff' || u.role === 'admin');
       setData(staffUsers);
     } catch (error) {
@@ -59,17 +55,11 @@ export default function Employee() {
   const handleConfirm = async () => {
     if (selectedId == null) return;
     try {
-      const csrfToken = await getCsrfToken();
-
       if (actionType === 'force-delete') {
-        await API.delete(`/user/${selectedId}`, {
-          headers: { 'X-XSRF-TOKEN': csrfToken },
-        });
+        await API.delete(`/user/${selectedId}`);
         notifySuccess('Đã xóa tài khoản vĩnh viễn');
       } else {
-        await API.put(`/user/${selectedId}/soft-delete`, null, {
-          headers: { 'X-XSRF-TOKEN': csrfToken },
-        });
+        await API.put(`/user/${selectedId}/soft-delete`, null);
         notifySuccess(
           actionType === 'disable'
             ? 'Đã vô hiệu hóa tài khoản'

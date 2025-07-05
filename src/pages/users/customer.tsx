@@ -7,9 +7,7 @@ import type { RootState } from "@/store";
 import TableGeneric from '@/components/TableGeneric';
 import type { TableAction } from '@/components/TableGeneric';
 import { API } from '@/lib/axios';
-import { getCsrfToken } from '@/utils/getCsrfToken';
 import CustomButton from '@/components/CustomButton';
-import { API_URL } from "@/lib/api"
 
 interface DataType {
   id: number;
@@ -38,10 +36,7 @@ export default function Customer() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const csrfToken = await getCsrfToken();
-      const response = await API.get("/users", {
-        headers: { 'X-CSRF-Token': csrfToken },
-      });
+      const response = await API.get("/users");
       let customerUsers = response.data.filter((u: DataType) => u.role === 'customer');
       if (user?.role === 'staff') {
         customerUsers = customerUsers.filter((u: DataType) => u.is_deleted === 'active');
@@ -67,18 +62,12 @@ export default function Customer() {
   const handleConfirm = async () => {
     if (selectedId == null) return;
     try {
-      const csrfToken = await getCsrfToken();
-
       if (actionType === 'force-delete') {
-        await API.delete(`/user/${selectedId}`, {
-          headers: { 'X-XSRF-TOKEN': csrfToken },
-        });
+        await API.delete(`/user/${selectedId}`);
         notifySuccess('Đã xóa tài khoản vĩnh viễn');
         setData(prev => prev.filter(u => u.id !== selectedId));
       } else {
-        await API.put(`/user/${selectedId}/soft-delete`, null, {
-          headers: { 'X-XSRF-TOKEN': csrfToken },
-        });
+        await API.put(`/user/${selectedId}/soft-delete`, null);
         const newStatus = actionType === 'disable' ? 'inactive' : 'active';
         notifySuccess(`Đã ${actionType === 'disable' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản`);
         setData(prev =>

@@ -1,4 +1,5 @@
 import Destinations from "./destinations";
-import TourDestination from "./category"
+import DestinationCategory from "./category";
+import CreateDestination from "./create";
 
-export { Destinations, TourDestination }
+export { Destinations, DestinationCategory, CreateDestination }

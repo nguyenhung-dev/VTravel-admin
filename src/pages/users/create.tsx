@@ -73,7 +73,7 @@ export default function CreateUser() {
   return (
     <>
       {contextHolder}
-      <div className="">
+      <div>
         <div className="w-full mx-auto bg-white p-8 shadow-lg rounded-[8px]">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-800">Tạo tài khoản mới</h1>

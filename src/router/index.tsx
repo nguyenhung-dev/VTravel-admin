@@ -10,7 +10,7 @@ import HomePage from "@pages/home";
 import Profile from "@pages/profile";
 import { Employee, Customer, CreateUser, UpdateUser } from "@pages/users";
 import { Tours, TourCategory } from "@pages/tours";
-import { Destinations, TourDestination } from "@pages/destinations";
+import { Destinations, DestinationCategory, CreateDestination } from "@pages/destinations";
 import LoginPage from "@/pages/auth/login";
 import Authorization from "@/pages/authorization";
 import ProtectedRoute from "@/contexts/ProtectedRoute";
@@ -62,7 +62,8 @@ export default function AppRoutes() {
         <Route path="tours/category" element={<TourCategory />} />
         {/* === DESTINATIONS === */}
         <Route path="destinations" element={<Destinations />} />
-        <Route path="destination/category" element={<TourDestination />} />
+        <Route path="destination/category" element={<DestinationCategory />} />
+        <Route path="destination/create" element={<CreateDestination />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

@@ -204,7 +204,7 @@ export default function TourCategory() {
         label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
         onClick: async () => {
           try {
-            await API.put(`/tour-categories/${record.id}/status`, {
+            await API.post(`/tour-categories/${record.id}/soft-delete`, {
               is_deleted: record.is_deleted === 'active' ? 'inactive' : 'active',
             });
             notifySuccess('Cập nhật trạng thái thành công');
@@ -230,7 +230,7 @@ export default function TourCategory() {
         danger: true,
         onClick: async () => {
           try {
-            await API.put(`/tour-categories/${record.id}/status`, {
+            await API.post(`/tour-categories/${record.id}/soft-delete`, {
               is_deleted: 'inactive',
             });
             notifySuccess('Xóa danh mục (mềm) thành công');

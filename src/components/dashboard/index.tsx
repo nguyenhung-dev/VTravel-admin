@@ -52,9 +52,8 @@ const items: MenuItem[] = [
     label: 'Quản lý Điểm đến',
     icon: <FaLocationDot />,
     children: [
-      { key: '/destinations', label: 'Danh sách điểm đến' },
       { key: '/destination/category', label: 'Danh mục điểm đến' },
-      { key: '/destinations/add', label: 'Thêm điểm đến' },
+      { key: '/destinations', label: 'Tất cả điểm đến' },
     ],
   },
 

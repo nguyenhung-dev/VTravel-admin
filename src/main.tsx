@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "@/router";
 import { Provider } from 'react-redux';
 import { store } from "@/store/index";
+import { MantineProvider } from '@mantine/core';
 import './index.css';
 import './styles/global.css';
 import 'antd/dist/reset.css';
@@ -11,9 +12,11 @@ import 'antd/dist/reset.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <MantineProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </MantineProvider>
     </Provider>
   </StrictMode>,
 );

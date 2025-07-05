@@ -58,7 +58,7 @@ export default function Header() {
               <img
                 src={
                   user?.avatar
-                    ? `${import.meta.env.VITE_BACKEND_URL}/storage/${user.avatar}`
+                    ? `${user.avatar_url}`
                     : "/images/avatar-default.png"
                 }
                 alt="avatar"

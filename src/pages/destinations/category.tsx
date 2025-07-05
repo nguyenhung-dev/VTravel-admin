@@ -12,7 +12,6 @@ import type {
 import {
   UploadOutlined,
   PlusOutlined,
-  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { API } from '@/lib/axios';
 import TableGeneric from '@/components/TableGeneric';
@@ -20,6 +19,9 @@ import type { ColumnsType } from 'antd/es/table';
 import type { TableAction } from '@/components/TableGeneric';
 import { useNotifier } from '@/hooks/useNotifier';
 import dayjs from 'dayjs';
+import CustomButton from '@/components/CustomButton';
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store";
 
 interface CategoryType {
   id: number;
@@ -27,15 +29,21 @@ interface CategoryType {
   thumbnail?: string;
   thumbnail_url?: string;
   created_at?: string;
+  is_deleted: 'active' | 'inactive';
 }
 
-export default function TourCategory() {
+
+export default function DestinationCategory() {
   const [data, setData] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryType | null>(null);
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const role = useSelector((state: RootState) => state.auth.user?.role);
+
 
   const { contextHolder, notifyError, notifySuccess } = useNotifier();
 
@@ -43,15 +51,17 @@ export default function TourCategory() {
     setLoading(true);
     try {
       const res = await API.get("/destination-categories");
-      console.log(res.data);
 
-      const updated = res.data.map((item: any) => ({
-        id: item.category_id ?? item.id,
-        category_name: item.category_name,
-        thumbnail: item.thumbnail,
-        thumbnail_url: item.thumbnail_url,
-        created_at: item.created_at,
-      }));
+      const updated = res.data
+        .filter((item: any) => role !== 'staff' || item.is_deleted === 'active')
+        .map((item: any) => ({
+          id: item.category_id ?? item.id,
+          category_name: item.category_name,
+          thumbnail: item.thumbnail,
+          thumbnail_url: item.thumbnail_url,
+          created_at: item.created_at,
+          is_deleted: item.is_deleted,
+        }));
       setData(updated);
     } catch {
       notifyError('Không thể tải danh mục');
@@ -101,14 +111,8 @@ export default function TourCategory() {
   };
 
   const confirmDelete = (id: number) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa danh mục?',
-      icon: <ExclamationCircleOutlined />,
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: () => { console.log("Modal OK clicked"); handleDelete(id) },
-    });
+    setDeletingId(id);
+    setConfirmDeleteVisible(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -171,20 +175,76 @@ export default function TourCategory() {
       render: (date) => dayjs(date).format('DD/MM/YYYY'),
     },
   ];
+  if (role === 'admin') {
+    columns.push({
+      title: 'Trạng thái',
+      dataIndex: 'is_deleted',
+      render: (val: 'active' | 'inactive') =>
+        val === 'active' ? (
+          <span className="active">Đang hoạt động</span>
+        ) : (
+          <span className="inactive">Ngưng hoạt động</span>
+        ),
+    });
+  }
 
-  const getActions = (record: CategoryType): TableAction[] => [
-    {
-      key: 'edit',
-      label: 'Sửa',
-      onClick: () => handleEdit(record),
-    },
-    {
-      key: 'delete',
-      label: <span style={{ color: 'red' }}>Xóa</span>,
-      danger: true,
-      onClick: () => confirmDelete(record.id),
-    },
-  ];
+
+  const getActions = (record: CategoryType): TableAction[] => {
+    const actions: TableAction[] = [
+      {
+        key: 'edit',
+        label: 'Sửa',
+        onClick: () => handleEdit(record),
+      },
+    ];
+
+    if (role === 'admin') {
+      actions.push({
+        key: record.is_deleted === 'active' ? 'disable' : 'enable',
+        label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
+        onClick: async () => {
+          try {
+            await API.post(`/destination-categories/${record.id}/soft-delete`, {
+              is_deleted: record.is_deleted === 'active' ? 'inactive' : 'active',
+            });
+            notifySuccess('Cập nhật trạng thái thành công');
+            fetchCategories();
+          } catch {
+            notifyError('Thao tác thất bại');
+          }
+        },
+      });
+
+      actions.push({
+        key: 'force-delete',
+        label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
+        danger: true,
+        onClick: () => confirmDelete(record.id),
+      });
+    }
+
+    if (role === 'staff') {
+      actions.push({
+        key: 'soft-delete',
+        label: <span style={{ color: 'red' }}>Xóa</span>,
+        danger: true,
+        onClick: async () => {
+          try {
+            await API.post(`/destination-categories/${record.id}/soft-delete`, {
+              is_deleted: 'inactive',
+            });
+            notifySuccess('Xóa danh mục (mềm) thành công');
+            fetchCategories();
+          } catch {
+            notifyError('Thao tác thất bại');
+          }
+        },
+      });
+    }
+
+    return actions;
+  };
+
 
   return (
     <>
@@ -246,6 +306,31 @@ export default function TourCategory() {
           </Form.Item>
         </Form>
       </Modal>
+      <Modal
+        open={confirmDeleteVisible}
+        title="Xác nhận xóa danh mục"
+        footer={[
+          <CustomButton
+            key="cancel"
+            text="Hủy"
+            customType="cancel"
+            onClick={() => setConfirmDeleteVisible(false)}
+          />,
+          <CustomButton
+            key="delete"
+            text={"Xóa"}
+            customType="delete"
+            onClick={() => {
+              if (deletingId !== null) handleDelete(deletingId);
+              setConfirmDeleteVisible(false);
+            }}
+            loading={loading}
+          />,
+        ]}
+      >
+        <p>Bạn chắc chắn muốn xóa danh mục này?</p>
+      </Modal >
+
     </>
   );
 }

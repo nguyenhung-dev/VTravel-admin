@@ -152,12 +152,12 @@ export default function Customer() {
         record.is_deleted === 'active'
           ? {
             key: 'disable',
-            label: 'Disable',
+            label: 'Vô hiệu hóa',
             onClick: () => handleAction(record.id, 'disable'),
           }
           : {
             key: 'enable',
-            label: 'Enable',
+            label: 'Kích hoạt',
             onClick: () => handleAction(record.id, 'enable'),
           },
         {

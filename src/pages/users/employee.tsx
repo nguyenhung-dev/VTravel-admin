@@ -139,7 +139,7 @@ export default function Employee() {
     },
     {
       key: 'toggle',
-      label: record.is_deleted === 'active' ? 'Disable' : 'Enable',
+      label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
       onClick: () =>
         handleAction(record.id, record.is_deleted === 'active' ? 'disable' : 'enable'),
     },

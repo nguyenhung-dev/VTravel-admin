@@ -6,6 +6,7 @@ import { MdSecurity } from "react-icons/md";
 import { IoSettings } from "react-icons/io5";
 import { VscExtensions } from "react-icons/vsc";
 import type { MenuProps } from 'antd';
+import { BiSolidPhotoAlbum } from "react-icons/bi";
 import { Menu } from 'antd';
 import { PiFlagBannerFill } from "react-icons/pi";
 import { useEffect } from 'react';
@@ -54,6 +55,16 @@ const items: MenuItem[] = [
     children: [
       { key: '/destination/category', label: 'Danh mục điểm đến' },
       { key: '/destinations', label: 'Tất cả điểm đến' },
+    ],
+  },
+
+  {
+    key: 'albums',
+    label: 'Albums ảnh',
+    icon: <BiSolidPhotoAlbum />,
+    children: [
+      { key: '/albums', label: 'Danh sách albums' },
+      { key: '/album-images', label: 'Tất cả ảnh' },
     ],
   },
 

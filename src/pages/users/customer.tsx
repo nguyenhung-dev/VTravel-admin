@@ -157,7 +157,7 @@ export default function Customer() {
           }
           : {
             key: 'enable',
-            label: 'Kích hoạt',
+            label: 'Kích ',
             onClick: () => handleAction(record.id, 'enable'),
           },
         {

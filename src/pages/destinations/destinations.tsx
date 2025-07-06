@@ -16,12 +16,16 @@ import { useNotifier } from '@/hooks/useNotifier';
 import CustomButton from '@/components/CustomButton';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
+import { useNavigate } from 'react-router-dom';
+import { Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
 
 interface DestinationType {
   id: number;
   name: string;
   location: string;
   image: string;
+  image_url: string;
   is_deleted: 'active' | 'inactive';
 }
 
@@ -36,6 +40,7 @@ export default function Destinations() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const role = useSelector((state: RootState) => state.auth.user?.role);
   const { contextHolder, notifyError, notifySuccess } = useNotifier();
+  const navigate = useNavigate();
 
   const fetchDestinations = async () => {
     setLoading(true);
@@ -97,7 +102,7 @@ export default function Destinations() {
             uid: '-1',
             name: 'image.jpg',
             status: 'done',
-            url: record.image,
+            url: record.image_url,
           },
         ]
         : []
@@ -105,9 +110,9 @@ export default function Destinations() {
     setModalVisible(true);
   };
 
-  const handleSoftDelete = async (id: number, status: 'active' | 'inactive') => {
+  const handleSoftDelete = async (id: number) => {
     try {
-      await API.post(`/destinations/${id}/soft-delete`, { is_deleted: status });
+      await API.post(`/destinations/${id}/soft-delete`);
       notifySuccess('Cập nhật trạng thái thành công');
       fetchDestinations();
     } catch {
@@ -135,9 +140,12 @@ export default function Destinations() {
     { title: 'Tên địa điểm', dataIndex: 'name' },
     {
       title: 'Hình ảnh',
-      dataIndex: 'image',
-      render: (url) =>
-        url ? <img src={url} className="w-12 h-12 rounded-md object-cover" /> : 'Không có',
+      render: (_, record) =>
+        record.image_url ? (
+          <img src={record.image_url} className="w-12 h-12 rounded-md object-cover" />
+        ) : (
+          'Không có'
+        ),
     },
     { title: 'Địa điểm', dataIndex: 'location' },
   ];
@@ -146,7 +154,7 @@ export default function Destinations() {
     columns.push({
       title: 'Trạng thái',
       dataIndex: 'is_deleted',
-      render: (val) => val === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động',
+      render: (val) => val === 'active' ? (<span className="active">Đang hoạt động</span>) : (<span className="active">Ngưng hoạt động</span>),
     });
   }
 
@@ -156,40 +164,51 @@ export default function Destinations() {
   });
 
   const getActions = (record: DestinationType): React.ReactNode => {
-    const actions: TableAction[] = [
-      {
-        key: 'view',
-        label: 'Xem',
-        onClick: () => console.log('Xem:', record),
-      },
-      {
-        key: 'edit',
-        label: 'Sửa',
-        onClick: () => handleEdit(record),
-      },
+    const items: MenuProps['items'] = [
+      { key: 'edit', label: 'Sửa' },
     ];
 
     if (role === 'admin') {
-      actions.push({
-        key: 'toggle-status',
-        label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
-        onClick: () => handleSoftDelete(record.id, record.is_deleted === 'active' ? 'inactive' : 'active'),
-      });
-      actions.push({
-        key: 'force-delete',
-        label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
-        onClick: () => confirmDelete(record.id),
-      });
+      items.push(
+        {
+          key: 'toggle-status',
+          label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
+        },
+        {
+          key: 'force-delete',
+          label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
+        }
+      );
     } else if (role === 'staff') {
-      actions.push({
+      items.push({
         key: 'soft-delete',
         label: <span style={{ color: 'red' }}>Xóa</span>,
-        onClick: () => handleSoftDelete(record.id, 'inactive'),
       });
     }
 
-    return <>{actions.map((a) => <Button key={a.key} onClick={a.onClick} type="link">{a.label}</Button>)}</>;
+    const handleMenuClick = ({ key }: { key: string }) => {
+      if (key === 'edit') {
+        handleEdit(record);
+      } else if (key === 'toggle-status') {
+        const newStatus = record.is_deleted === 'active' ? 'inactive' : 'active';
+        handleSoftDelete(record.id);
+      } else if (key === 'force-delete') {
+        confirmDelete(record.id);
+      } else if (key === 'soft-delete') {
+        handleSoftDelete(record.id);
+      }
+    };
+
+    return (
+      <Dropdown
+        menu={{ items, onClick: handleMenuClick }}
+        trigger={['click']}
+      >
+        <Button type="text" icon={<PlusOutlined />} />
+      </Dropdown>
+    );
   };
+
 
   return (
     <>
@@ -199,10 +218,7 @@ export default function Destinations() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
-            setEditing(null);
-            form.resetFields();
-            setFileList([]);
-            setModalVisible(true);
+            navigate("/destination/create")
           }}
         >
           Thêm địa điểm

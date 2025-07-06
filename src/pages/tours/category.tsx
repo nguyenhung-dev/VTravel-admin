@@ -6,9 +6,7 @@ import {
   Upload,
   Button,
 } from 'antd';
-import type {
-  UploadFile,
-} from 'antd';
+import type { UploadFile } from 'antd';
 import {
   UploadOutlined,
   PlusOutlined,
@@ -32,26 +30,23 @@ interface CategoryType {
   is_deleted: 'active' | 'inactive';
 }
 
-
-export default function TourCategory() {
+export default function DestinationCategory() {
   const [data, setData] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryType | null>(null);
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
-  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [actionType, setActionType] = useState<'disable' | 'enable' | 'force-delete' | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
   const role = useSelector((state: RootState) => state.auth.user?.role);
-
-
   const { contextHolder, notifyError, notifySuccess } = useNotifier();
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
       const res = await API.get("/tour-categories");
-
       const updated = res.data
         .filter((item: any) => role !== 'staff' || item.is_deleted === 'active')
         .map((item: any) => ({
@@ -83,23 +78,16 @@ export default function TourCategory() {
         formData.append('thumbnail', fileList[0].originFileObj);
       }
       if (editingCategory) {
-        // UPDATE
         await API.post(`/tour-categories/${editingCategory.id}?_method=PUT`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         notifySuccess('Cập nhật danh mục thành công');
       } else {
-        // CREATE
         await API.post('/tour-categories', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         notifySuccess('Tạo danh mục thành công');
       }
-
       setModalVisible(false);
       setEditingCategory(null);
       form.resetFields();
@@ -110,61 +98,55 @@ export default function TourCategory() {
     }
   };
 
-  const confirmDelete = (id: number) => {
-    setDeletingId(id);
-    setConfirmDeleteVisible(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    console.log('Deleting ID:', id);
+  const handleConfirmAction = async () => {
+    if (!selectedId || !actionType) return;
     try {
-      await API.delete(`/tour-categories/${id}`);
-      notifySuccess('Xóa danh mục thành công');
+      if (actionType === 'force-delete') {
+        await API.delete(`/tour-categories/${selectedId}`);
+        notifySuccess('Xóa danh mục thành công');
+      } else {
+        await API.post(`/tour-categories/${selectedId}/soft-delete`, {
+          is_deleted: actionType === 'disable' ? 'inactive' : 'active',
+        });
+        notifySuccess(
+          actionType === 'disable' ? 'Đã vô hiệu hóa danh mục' : 'Đã kích hoạt danh mục'
+        );
+      }
       fetchCategories();
     } catch {
-      notifyError('Xóa thất bại');
+      notifyError('Thao tác thất bại');
+    } finally {
+      setShowConfirm(false);
+      setSelectedId(null);
+      setActionType(null);
     }
   };
 
   const handleEdit = (record: CategoryType) => {
+    if (record.is_deleted === 'inactive') {
+      notifyError('Danh mục này đang bị vô hiệu hóa, không thể chỉnh sửa.');
+      return;
+    }
     setEditingCategory(record);
-    form.setFieldsValue({
-      category_name: record.category_name,
-    });
+    form.setFieldsValue({ category_name: record.category_name });
     setFileList(
       record.thumbnail_url
-        ? [
-          {
-            uid: '-1',
-            name: 'thumbnail.jpg',
-            status: 'done',
-            url: record.thumbnail_url,
-          },
-        ]
+        ? [{ uid: '-1', name: 'thumbnail.jpg', status: 'done', url: record.thumbnail_url }]
         : []
     );
     setModalVisible(true);
   };
 
+
   const columns: ColumnsType<CategoryType> = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-    },
-    {
-      title: 'Tên danh mục',
-      dataIndex: 'category_name',
-    },
+    { title: 'ID', dataIndex: 'id' },
+    { title: 'Tên danh mục', dataIndex: 'category_name' },
     {
       title: 'Hình ảnh',
       dataIndex: 'thumbnail_url',
       render: (url) =>
         url ? (
-          <img
-            src={url}
-            alt="thumb"
-            className="w-12 h-12 rounded-md object-cover"
-          />
+          <img src={url} alt="thumb" className="w-12 h-12 rounded-md object-cover" />
         ) : (
           <span>Không có</span>
         ),
@@ -175,19 +157,18 @@ export default function TourCategory() {
       render: (date) => dayjs(date).format('DD/MM/YYYY'),
     },
   ];
+
   if (role === 'admin') {
     columns.push({
       title: 'Trạng thái',
       dataIndex: 'is_deleted',
-      render: (val: 'active' | 'inactive') =>
-        val === 'active' ? (
-          <span className="active">Đang hoạt động</span>
-        ) : (
-          <span className="inactive">Ngưng hoạt động</span>
-        ),
+      render: (val) => (
+        <span className={val === 'active' ? 'active' : 'inactive'}>
+          {val === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+        </span>
+      ),
     });
   }
-
 
   const getActions = (record: CategoryType): TableAction[] => {
     const actions: TableAction[] = [
@@ -202,16 +183,10 @@ export default function TourCategory() {
       actions.push({
         key: record.is_deleted === 'active' ? 'disable' : 'enable',
         label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
-        onClick: async () => {
-          try {
-            await API.post(`/tour-categories/${record.id}/soft-delete`, {
-              is_deleted: record.is_deleted === 'active' ? 'inactive' : 'active',
-            });
-            notifySuccess('Cập nhật trạng thái thành công');
-            fetchCategories();
-          } catch {
-            notifyError('Thao tác thất bại');
-          }
+        onClick: () => {
+          setSelectedId(record.id);
+          setActionType(record.is_deleted === 'active' ? 'disable' : 'enable');
+          setShowConfirm(true);
         },
       });
 
@@ -219,7 +194,11 @@ export default function TourCategory() {
         key: 'force-delete',
         label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
         danger: true,
-        onClick: () => confirmDelete(record.id),
+        onClick: () => {
+          setSelectedId(record.id);
+          setActionType('force-delete');
+          setShowConfirm(true);
+        },
       });
     }
 
@@ -245,14 +224,13 @@ export default function TourCategory() {
     return actions;
   };
 
-
   return (
     <>
       {contextHolder}
       <div className='mb-2'>
-        < Button
+        <Button
           type="primary"
-          icon={< PlusOutlined />}
+          icon={<PlusOutlined />}
           onClick={() => {
             setEditingCategory(null);
             form.resetFields();
@@ -261,7 +239,7 @@ export default function TourCategory() {
           }}
         >
           Thêm danh mục
-        </ Button>
+        </Button>
       </div>
 
       <TableGeneric<CategoryType>
@@ -306,31 +284,61 @@ export default function TourCategory() {
           </Form.Item>
         </Form>
       </Modal>
+
       <Modal
-        open={confirmDeleteVisible}
-        title="Xác nhận xóa danh mục"
+        open={showConfirm}
+        title={
+          actionType === 'disable'
+            ? 'Xác nhận vô hiệu hóa danh mục'
+            : actionType === 'enable'
+              ? 'Xác nhận kích hoạt danh mục'
+              : 'Xác nhận xóa vĩnh viễn danh mục'
+        }
+        onCancel={() => {
+          setShowConfirm(false);
+          setSelectedId(null);
+          setActionType(null);
+        }}
         footer={[
           <CustomButton
             key="cancel"
             text="Hủy"
             customType="cancel"
-            onClick={() => setConfirmDeleteVisible(false)}
+            onClick={() => {
+              setShowConfirm(false);
+              setSelectedId(null);
+              setActionType(null);
+            }}
           />,
           <CustomButton
-            key="delete"
-            text={"Xóa"}
-            customType="delete"
-            onClick={() => {
-              if (deletingId !== null) handleDelete(deletingId);
-              setConfirmDeleteVisible(false);
-            }}
+            key="confirm"
+            text={
+              actionType === 'disable'
+                ? 'Vô hiệu hóa'
+                : actionType === 'enable'
+                  ? 'Kích hoạt'
+                  : 'Xóa'
+            }
+            customType={
+              actionType === 'disable'
+                ? 'disable'
+                : actionType === 'enable'
+                  ? 'enable'
+                  : 'forceDelete'
+            }
             loading={loading}
+            onClick={handleConfirmAction}
           />,
         ]}
       >
-        <p>Bạn chắc chắn muốn xóa danh mục này?</p>
-      </Modal >
-
+        <p>
+          {actionType === 'disable'
+            ? 'Bạn có chắc chắn muốn vô hiệu hóa danh mục này không?'
+            : actionType === 'enable'
+              ? 'Bạn có chắc chắn muốn kích hoạt lại danh mục này không?'
+              : 'Bạn có chắc chắn muốn xóa vĩnh viễn danh mục này? Hành động này không thể hoàn tác.'}
+        </p>
+      </Modal>
     </>
   );
 }

@@ -15,6 +15,8 @@ import LoginPage from "@/pages/auth/login";
 import Authorization from "@/pages/authorization";
 import ProtectedRoute from "@/contexts/ProtectedRoute";
 import ProtectedRouteRole from "./ProtectedRoute";
+import Albums from "@/pages/albums/albums";
+import AlbumImages from "@/pages/albums/albumImages";
 
 export default function AppRoutes() {
   const dispatch = useDispatch<AppDispatch>();
@@ -64,6 +66,9 @@ export default function AppRoutes() {
         <Route path="destinations" element={<Destinations />} />
         <Route path="destination/category" element={<DestinationCategory />} />
         <Route path="destination/create" element={<CreateDestination />} />
+        {/* === ALBUMS === */}
+        <Route path="albums" element={<Albums />} />
+        <Route path="album-images" element={<AlbumImages />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

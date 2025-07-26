@@ -107,8 +107,8 @@ export default function Employee() {
       key: 'is_verified',
       render: (is_verified: boolean) => (
         <span className={`
-          ${is_verified === true ? 'active' : 'inactive'}`}>
-          {is_verified === true ? 'Đã xác thực' : 'Chưa xác thực'}
+          ${is_verified ? 'active' : 'inactive'}`}>
+          {is_verified ? 'Đã xác thực' : 'Chưa xác thực'}
         </span>
       ),
     },

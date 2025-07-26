@@ -1,263 +1,261 @@
-import { Tag, Modal, Button } from 'antd';
 import { useEffect, useState } from 'react';
+import { Table, Button, Dropdown, Modal } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
+import { EllipsisOutlined } from '@ant-design/icons';
+import { useSelector } from 'react-redux';
+import { API } from '@/lib/axios';
 import { useNotifier } from '@/hooks/useNotifier';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store";
-import TableGeneric from '@/components/TableGeneric';
-import type { TableAction } from '@/components/TableGeneric';
-import { API } from '@/lib/axios';
-import CustomButton from '@/components/CustomButton';
-import {
-  PlusOutlined
-} from '@ant-design/icons';
 
-interface DataType {
-  id: number;
-  name: string;
-  description: string;
-  location: string;
-  image: string;
-  avatar_url: string;
-  is_deleted: string;
+interface TourType {
+  tour_id: number;
+  tour_name: string;
+  image: string | null;
+  category: {
+    category_name: string;
+  } | null;
+  is_deleted: 'active' | 'inactive';
 }
 
-type ActionType = 'disable' | 'enable' | 'force-delete';
-
 export default function Tours() {
-  const [data, setData] = useState<DataType[]>([]);
+  const [data, setData] = useState<TourType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [actionType, setActionType] = useState<ActionType>('disable');
-  const [showConfirm, setShowConfirm] = useState(false);
-  const user = useSelector((state: RootState) => state.auth.user);
-  const navigate = useNavigate();
-  const { notifySuccess, notifyError, contextHolder } = useNotifier();
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [confirmToggleVisible, setConfirmToggleVisible] = useState(false);
+  const [targetId, setTargetId] = useState<number | null>(null);
+  const [targetToggleStatus, setTargetToggleStatus] = useState<'active' | 'inactive' | null>(null);
 
-  const fetchUsers = async () => {
+  const role = useSelector((state: any) => state.auth.user?.role);
+  const { contextHolder, notifyError, notifySuccess } = useNotifier();
+  const navigate = useNavigate();
+
+  const BASE_IMG_URL = `${import.meta.env.VITE_BACKEND_URL}storage/`; // sửa theo backend của bạn
+
+  const fetchTours = async () => {
     setLoading(true);
     try {
-      const response = await API.get("/users");
-      let customerUsers = response.data.filter((u: DataType) => u.role === 'customer');
-      if (user?.role === 'staff') {
-        customerUsers = customerUsers.filter((u: DataType) => u.is_deleted === 'active');
-      }
-      setData(customerUsers);
-    } catch (error) {
-      notifyError('Lấy danh sách người dùng thất bại');
+      const res = await API.get('/tours');
+      // Nếu cần lọc theo role giống destination thì filter ở đây
+      const tours: TourType[] = res.data
+        .filter((tour: TourType) => role === 'admin' || tour.is_deleted === 'active');
+      setData(tours);
+    } catch {
+      notifyError('Không thể tải danh sách tour');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [user?.role]);
+    fetchTours();
+  }, []);
 
-  const handleAction = (id: number, type: ActionType) => {
-    setSelectedId(id);
-    setActionType(type);
-    setShowConfirm(true);
+  const confirmToggleStatus = (id: number, currentStatus: 'active' | 'inactive') => {
+    setTargetId(id);
+    setTargetToggleStatus(currentStatus);
+    setConfirmToggleVisible(true);
   };
 
-  const handleConfirm = async () => {
-    if (selectedId == null) return;
+  const handleToggleStatus = async () => {
+    if (targetId === null) return;
+    setLoading(true);
     try {
-      if (actionType === 'force-delete') {
-        await API.delete(`/user/${selectedId}`);
-        notifySuccess('Đã xóa tài khoản vĩnh viễn');
-        setData(prev => prev.filter(u => u.id !== selectedId));
-      } else {
-        await API.put(`/user/${selectedId}/soft-delete`, null);
-        const newStatus = actionType === 'disable' ? 'inactive' : 'active';
-        notifySuccess(`Đã ${actionType === 'disable' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản`);
-        setData(prev =>
-          prev.map(u => (u.id === selectedId ? { ...u, is_deleted: newStatus } : u))
-        );
-      }
-      await fetchUsers();
-    } catch (error) {
+      await API.post(`/tours/${targetId}/toggle`); // gọi softDelete API
+      notifySuccess('Cập nhật trạng thái thành công');
+      fetchTours();
+    } catch {
       notifyError('Thao tác thất bại');
     } finally {
-      setShowConfirm(false);
-      setSelectedId(null);
+      setLoading(false);
+      setConfirmToggleVisible(false);
+      setTargetId(null);
+      setTargetToggleStatus(null);
     }
   };
 
-  const baseColumns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
+  const confirmDelete = (id: number) => {
+    setTargetId(id);
+    setConfirmDeleteVisible(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    setLoading(true);
+    try {
+      await API.delete(`/tours/${id}`);
+      notifySuccess('Xóa vĩnh viễn thành công');
+      fetchTours();
+    } catch {
+      notifyError('Xóa thất bại');
+    } finally {
+      setLoading(false);
+      setConfirmDeleteVisible(false);
+      setTargetId(null);
+    }
+  };
+
+  const columns: ColumnsType<TourType> = [
     {
-      title: 'Ảnh đại diện',
-      dataIndex: 'avatar',
-      key: 'avatar',
-      render: (_: any, record: DataType) =>
-        record.avatar_url ? (
-          <img src={record.avatar_url} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: "cover" }} />
+      title: 'ID',
+      dataIndex: 'tour_id',
+      width: 80,
+    },
+    {
+      title: 'Tên tour',
+      dataIndex: 'tour_name',
+    },
+    {
+      title: 'Hình ảnh',
+      dataIndex: 'image',
+      width: 120,
+      render: (img) =>
+        img ? (
+          <img
+            src={`${BASE_IMG_URL}${img}`}
+            alt="Hình ảnh tour"
+            style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 4 }}
+          />
         ) : (
-          <img src="/images/avatar-default.png" alt="default avatar" style={{ width: 40, height: 40, borderRadius: '50%' }} />
+          'Không có'
         ),
     },
-    { title: 'Họ và tên', dataIndex: 'full_name', key: 'full_name' },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
     {
-      title: 'Quyền',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role: string) => <Tag color={role === 'staff' ? 'success' : 'default'}>{role}</Tag>,
-    },
-    {
-      title: 'Xác thực',
-      dataIndex: 'is_verified',
-      key: 'is_verified',
-      render: (is_verified: boolean) => (
-        <span className={`${is_verified === true ? 'active' : 'inactive'}`}>
-          {is_verified === true ? 'Đã xác thực' : 'Chưa xác thực'}
-        </span>
-      ),
+      title: 'Danh mục',
+      dataIndex: ['category', 'category_name'],
+      width: 150,
+      render: (text) => text || 'Không có',
     },
   ];
-  if (user?.role === 'admin') {
-    baseColumns.push({
+
+  if (role === 'admin') {
+    columns.push({
       title: 'Trạng thái',
       dataIndex: 'is_deleted',
-      key: 'is_deleted',
-      render: (isDeleted: string) => (
-        <span className={`${isDeleted === 'active' ? 'active' : 'inactive'}`}>
-          {isDeleted === 'active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
-        </span>
-      ),
+      width: 120,
+      render: (val) =>
+        val === 'active' ? (
+          <span style={{ color: 'green', fontWeight: '600' }}>Đang hoạt động</span>
+        ) : (
+          <span style={{ color: 'red', fontWeight: '600' }}>Ngưng hoạt động</span>
+        ),
     });
   }
 
-  const getActions: (record: DataType) => TableAction[] = (record) => {
-    const actions: TableAction[] = [
-      {
-        key: 'edit',
-        label: 'Sửa',
-        onClick: () => {
-          if (record.is_deleted === 'inactive') {
-            notifyError('Tài khoản này đang bị vô hiệu hóa, không thể chỉnh sửa.');
-          } else {
-            navigate(`/user/update/${record.id}`);
-          }
-        },
-      },
-    ];
+  columns.push({
+    title: 'Thao tác',
+    key: 'actions',
+    width: 100,
+    render: (_, record) => {
+      const items: MenuProps['items'] = [
+        { key: 'view', label: 'Xem' },
+        { key: 'edit', label: 'Sửa' },
+      ];
 
-    if (user?.role === 'admin') {
-      actions.push(
-        record.is_deleted === 'active'
-          ? {
-            key: 'disable',
-            label: 'Vô hiệu hóa',
-            onClick: () => handleAction(record.id, 'disable'),
-          }
-          : {
-            key: 'enable',
-            label: 'Kích hoạt',
-            onClick: () => handleAction(record.id, 'enable'),
+      if (role === 'admin') {
+        items.push(
+          {
+            key: 'toggle-status',
+            label: record.is_deleted === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt',
           },
-        {
-          key: 'delete',
-          label: 'Xóa vĩnh viễn',
-          onClick: () => handleAction(record.id, 'force-delete'),
-          danger: true,
-        }
-      );
-    } else if (user?.role === 'staff') {
-      actions.push({
-        key: 'delete',
-        label: 'Xóa',
-        onClick: () => handleAction(record.id, 'disable'),
-        danger: true,
-        disabled: record.is_deleted === 'inactive',
-      });
-    }
+          {
+            key: 'force-delete',
+            label: <span style={{ color: 'red' }}>Xóa vĩnh viễn</span>,
+          }
+        );
+      } else if (role === 'staff') {
+        items.push({
+          key: 'soft-delete',
+          label: <span style={{ color: 'red' }}>Xóa</span>,
+        });
+      }
 
-    return actions;
-  };
+      const handleMenuClick = ({ key }: { key: string }) => {
+        if (key === 'view') {
+          navigate(`/tour/${record.tour_id}`);
+        } else if (key === 'edit') {
+          navigate(`/tour/edit/${record.tour_id}`);
+        } else if (key === 'toggle-status') {
+          confirmToggleStatus(record.tour_id, record.is_deleted);
+        } else if (key === 'force-delete') {
+          confirmDelete(record.tour_id);
+        } else if (key === 'soft-delete') {
+          confirmToggleStatus(record.tour_id, record.is_deleted);
+        }
+      };
+
+      return (
+        <Dropdown menu={{ items, onClick: handleMenuClick }} trigger={['click']}>
+          <Button type="text" icon={<EllipsisOutlined />} />
+        </Dropdown>
+      );
+    },
+  });
 
   return (
     <>
       {contextHolder}
-      <div className='mb-2'>
-        <Button
-          type="primary"
-          icon={< PlusOutlined />}
-          onClick={() => {
-            navigate('/user/create', { state: { role: 'customer' } })
-          }}
-        >
-          Thêm tài khoản
-        </ Button>
-      </div>
-      <TableGeneric<DataType>
-        data={data}
-        columns={baseColumns}
+
+      <Button
+        type="primary"
+        style={{ marginBottom: 16 }}
+        onClick={() => navigate('/tour/create')}
+      >
+        Thêm tour mới
+      </Button>
+
+      <Table
+        columns={columns}
+        dataSource={data}
         loading={loading}
-        rowKey="id"
-        getActions={getActions}
+        rowKey="tour_id"
       />
+
+      {/* Modal xác nhận toggle trạng thái */}
       <Modal
-        open={showConfirm}
-        title={
-          actionType === 'disable'
-            ? user?.role === 'staff'
-              ? 'Xác nhận xóa tài khoản'
-              : 'Xác nhận vô hiệu hóa tài khoản'
-            : actionType === 'enable'
-              ? 'Xác nhận kích hoạt tài khoản'
-              : 'Xác nhận xóa vĩnh viễn tài khoản'
-        }
-        onCancel={() => {
-          setShowConfirm(false);
-          setSelectedId(null);
-        }}
+        open={confirmToggleVisible}
+        title={targetToggleStatus === 'active' ? 'Xác nhận vô hiệu hóa' : 'Xác nhận kích hoạt'}
+        onCancel={() => setConfirmToggleVisible(false)}
         footer={[
-          <CustomButton
-            key="cancel"
-            text="Hủy"
-            customType="cancel"
-            onClick={() => {
-              setShowConfirm(false);
-              setSelectedId(null);
-            }}
-          />,
-          <CustomButton
+          <Button key="cancel" onClick={() => setConfirmToggleVisible(false)}>
+            Hủy
+          </Button>,
+          <Button
             key="confirm"
-            text={
-              actionType === 'disable'
-                ? user?.role === 'staff'
-                  ? 'Xóa'
-                  : 'Vô hiệu hóa'
-                : actionType === 'enable'
-                  ? 'Kích hoạt'
-                  : 'Xóa'
-            }
-            customType={
-              actionType === 'disable'
-                ? user?.role === 'staff'
-                  ? 'delete'
-                  : 'disable'
-                : actionType === 'enable'
-                  ? 'enable'
-                  : 'forceDelete'
-            }
+            type="primary"
+            danger
+            onClick={handleToggleStatus}
             loading={loading}
-            onClick={handleConfirm}
-          />,
+          >
+            {targetToggleStatus === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
+          </Button>,
         ]}
       >
-        {
-          actionType === 'disable'
-            ? user?.role === 'staff'
-              ? 'Bạn có chắc chắn muốn xóa tài khoản này không?'
-              : 'Bạn có chắc chắn muốn vô hiệu hóa tài khoản này không?'
-            : actionType === 'enable'
-              ? 'Bạn có chắc chắn muốn kích hoạt lại tài khoản này không?'
-              : 'Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản này? Hành động này không thể hoàn tác.'
-        }
+        <p>
+          Bạn có chắc chắn muốn {targetToggleStatus === 'active' ? 'vô hiệu hóa' : 'kích hoạt'} tour này không?
+        </p>
+      </Modal>
+
+      {/* Modal xác nhận xóa vĩnh viễn */}
+      <Modal
+        open={confirmDeleteVisible}
+        title="Xác nhận xóa vĩnh viễn"
+        onCancel={() => setConfirmDeleteVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setConfirmDeleteVisible(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            onClick={() => targetId !== null && handleDelete(targetId)}
+            loading={loading}
+          >
+            Xóa
+          </Button>,
+        ]}
+      >
+        <p>Bạn chắc chắn muốn xóa vĩnh viễn tour này?</p>
       </Modal>
     </>
   );

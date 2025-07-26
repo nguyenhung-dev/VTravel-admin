@@ -9,9 +9,6 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const loading = useSelector((state: RootState) => state.auth.loading);
 
-  console.log("User:", user);
-  console.log("Auth:", { loading, isAuthenticated });
-
   if (loading) {
     return (
       <div className="w-screen h-screen flex justify-center items-center">

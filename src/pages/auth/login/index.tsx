@@ -76,13 +76,10 @@ export default function LoginPage() {
     <>
       {contextHolder}
       <div className={`${styles.loginForm}`}>
-        <div className={`${styles.form}`}>
+        <div className={`${styles.form} w-[400px]`}>
           <Form
             name="basic"
-            labelCol={{ span: 8 }}
-            wrapperCol={{ span: 16 }}
-            style={{ maxWidth: 600 }}
-            initialValues={{ remember: true }}
+            layout="vertical"
             onFinish={onFinish}
             onFinishFailed={onFinishFailed}
             autoComplete="off"
@@ -91,6 +88,7 @@ export default function LoginPage() {
               label="Email/Số điện thoại"
               name="info"
               rules={[validateInfo]}
+              className='flex flex-col'
             >
               <Input />
             </Form.Item>
@@ -103,12 +101,8 @@ export default function LoginPage() {
               <Input.Password />
             </Form.Item>
 
-            <Form.Item<FieldType> name="remember" valuePropName="checked" label={null}>
-              <Checkbox>Nhớ mật khẩu</Checkbox>
-            </Form.Item>
-
             <Form.Item label={null}>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit" className='w-full'>
                 Đăng nhập
               </Button>
             </Form.Item>
